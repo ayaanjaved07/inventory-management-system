@@ -48,7 +48,6 @@ export default function Login() {
             <Boxes className="h-6 w-6 text-white" />
           </div>
           <h1 className="text-xl font-semibold text-slate-900">{t('app.name')}</h1>
-          <p className="mt-1 text-sm text-slate-500">{t('app.tagline')}</p>
         </div>
 
         <form
@@ -80,8 +79,6 @@ export default function Login() {
           <Button type="submit" className="w-full" disabled={submitting}>
             {submitting ? t('auth.signingIn') : t('auth.signIn')}
           </Button>
-
-          <p className="pt-1 text-center text-xs text-slate-500">{t('auth.demoHint')}</p>
         </form>
       </div>
     </div>

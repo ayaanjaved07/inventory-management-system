@@ -1,7 +1,6 @@
 {
   "app": {
-    "name": "Inventory",
-    "tagline": "Stock, projects and sales in one place"
+    "name": "Inventory Management System"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -19,8 +18,7 @@
     "password": "Password",
     "signingIn": "Signing in...",
     "signOut": "Sign out",
-    "failed": "Sign in failed. Check your username and password.",
-    "demoHint": "Demo accounts: admin / manager / store / viewer (password: demo12345)"
+    "failed": "Sign in failed. Check your username and password."
   },
   "dashboard": {
     "title": "Dashboard",
