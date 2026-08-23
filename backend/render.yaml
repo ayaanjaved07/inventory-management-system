@@ -1,0 +1,33 @@
+# Render blueprint. Free tier: the web service sleeps when idle (~50s cold
+# start) and its filesystem is ephemeral -- hence Postgres, not SQLite.
+services:
+  - type: web
+    name: inventory-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: inventory-db
+          property: connectionString
+      # Set this in the Render dashboard to your Pages origin, e.g.
+      # https://<your-username>.github.io
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+databases:
+  - name: inventory-db
+    plan: free
