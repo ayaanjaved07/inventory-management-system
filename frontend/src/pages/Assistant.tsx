@@ -7,13 +7,6 @@ import { api, apiError } from '@/lib/api'
 import type { AgentInfo, ChatReply, ChatTurn } from '@/lib/types'
 import { Button, Card, ErrorNote, Input, Spinner } from '@/components/ui'
 
-const SUGGESTIONS = [
-  'What is running low?',
-  'How many ELEC-003 can I still promise to a project?',
-  'What sold best in the last 30 days?',
-  'What is allocated to PRJ-2026-01?',
-]
-
 export default function Assistant() {
   const { t } = useTranslation()
   const [turns, setTurns] = useState<ChatTurn[]>([])
@@ -62,11 +55,6 @@ export default function Assistant() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">{t('assistant.title')}</h1>
-        <p className="mt-1 text-sm text-slate-500">{t('assistant.subtitle')}</p>
-      </div>
-
       {info.isLoading ? (
         <div className="flex justify-center py-16">
           <Spinner className="h-7 w-7" />
@@ -91,17 +79,6 @@ export default function Assistant() {
                 <div className="py-6 text-center">
                   <Bot className="mx-auto h-8 w-8 text-slate-300" />
                   <p className="mt-3 text-sm text-slate-500">{t('assistant.empty')}</p>
-                  <div className="mt-4 flex flex-wrap justify-center gap-2">
-                    {SUGGESTIONS.map((s) => (
-                      <button
-                        key={s}
-                        className="rounded-full border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
-                        onClick={() => send(s)}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               )}
 
@@ -173,19 +150,6 @@ export default function Assistant() {
           </Card>
 
           {error && <ErrorNote message={error} />}
-
-          <Card className="p-5">
-            <h2 className="text-sm font-semibold text-slate-900">{t('assistant.canDo')}</h2>
-            <p className="mt-1 text-xs text-slate-500">{t('assistant.readOnly')}</p>
-            <ul className="mt-3 grid gap-1.5 text-sm text-slate-600 sm:grid-cols-2">
-              {info.data?.tools.map((tool) => (
-                <li key={tool.name} className="flex gap-2">
-                  <span className="text-slate-300">•</span>
-                  {tool.description}
-                </li>
-              ))}
-            </ul>
-          </Card>
         </>
       )}
     </div>

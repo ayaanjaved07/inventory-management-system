@@ -142,7 +142,6 @@ export default function Sales() {
               <p className="mt-1.5 text-2xl font-semibold text-slate-900">
                 {formatCurrency(stats.data?.revenue_total ?? 0, currency)}
               </p>
-              <p className="mt-1 text-xs text-slate-400">{t('sales.frozenRate')}</p>
             </div>
             <div className="rounded-lg bg-teal-50 p-2.5 text-teal-700">
               <IndianRupee className="h-5 w-5" />

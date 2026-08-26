@@ -107,7 +107,6 @@
     "next": "Next"
   },
   "activity": {
-    "subtitle": "Every change made in the system, and who made it.",
     "search": "Search by record or model...",
     "empty": "No activity recorded yet.",
     "system": "System"
@@ -121,8 +120,7 @@
     "you": "you",
     "passwordHint": "At least 8 characters.",
     "permissions": "What each role can change",
-    "canWrite": "Area",
-    "permissionsNote": "Read access is granted to every signed-in user. This table covers write access, and it is enforced by the API -- hiding a button in the interface is not a permission."
+    "canWrite": "Area"
   },
   "projects": {
     "title": "Projects",
@@ -153,8 +151,7 @@
     "issue": "Issue",
     "return": "Return",
     "cancel": "Cancel",
-    "note": "Note",
-    "reservedNotRemoved": "Allocating reserves stock. It only leaves when issued."
+    "note": "Note"
   },
   "sales": {
     "title": "Sales",

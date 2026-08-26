@@ -62,7 +62,6 @@ export default function Activity() {
     <div className="space-y-5">
       <div>
         <h1 className="text-xl font-semibold text-slate-900">{t('nav.activity')}</h1>
-        <p className="mt-1 text-sm text-slate-500">{t('activity.subtitle')}</p>
       </div>
 
       <Card>

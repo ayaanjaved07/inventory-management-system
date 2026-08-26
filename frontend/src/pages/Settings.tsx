@@ -272,9 +272,6 @@ export default function Settings() {
             </tbody>
           </table>
         </div>
-        <p className="border-t border-slate-200 px-5 py-3 text-xs text-slate-500">
-          {t('settings.permissionsNote')}
-        </p>
       </Card>
     </div>
   )

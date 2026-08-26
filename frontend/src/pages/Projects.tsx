@@ -81,7 +81,6 @@ export default function Projects() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">{t('projects.title')}</h1>
-          <p className="mt-1 text-sm text-slate-500">{t('projects.reservedNotRemoved')}</p>
         </div>
         {canEdit && (
           <Button onClick={() => setShowForm((v) => !v)}>
