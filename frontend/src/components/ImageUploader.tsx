@@ -139,7 +139,6 @@ export function ImageUploader({ itemId, canEdit }: { itemId: number | string; ca
             <ImagePlus className="h-4 w-4" />
             {upload.isPending ? t('common.loading') : t('items.addImage')}
           </Button>
-          <span className="text-xs text-slate-500">{t('items.imagesEphemeral')}</span>
         </div>
       )}
     </div>

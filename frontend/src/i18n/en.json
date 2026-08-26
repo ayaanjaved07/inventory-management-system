@@ -57,7 +57,6 @@
     "imageAlt": "Item photo",
     "primary": "Primary",
     "makePrimary": "Make primary",
-    "imagesEphemeral": "Images are lost on redeploy (free-tier hosting).",
     "export": "Export CSV",
     "import": "Import CSV",
     "importTitle": "Import items from CSV",
