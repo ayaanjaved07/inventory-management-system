@@ -204,8 +204,8 @@ export function ProjectAllocations({
       ) : (
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-left">
-              <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <thead className="ledger-head bg-slate-50 text-left">
+              <tr className="text-xs font-semibold text-slate-600">
                 <th className="px-4 py-2.5">{t('projects.item')}</th>
                 <th className="px-4 py-2.5">{t('projects.location')}</th>
                 <th className="px-4 py-2.5 text-right">{t('projects.allocated')}</th>

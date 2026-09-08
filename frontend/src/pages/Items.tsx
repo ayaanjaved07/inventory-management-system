@@ -199,7 +199,7 @@ export default function Items() {
               {report.errors.length > 0 && (
                 <div className="overflow-x-auto rounded-lg border border-slate-200">
                   <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <thead className="ledger-head bg-slate-50 text-left text-xs font-semibold text-slate-600">
                       <tr>
                         <th className="px-4 py-2">{t('items.row')}</th>
                         <th className="px-4 py-2">{t('items.sku')}</th>
@@ -360,8 +360,8 @@ export default function Items() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-left">
-                <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <thead className="ledger-head bg-slate-50 text-left">
+                <tr className="text-xs font-semibold text-slate-600">
                   <th className="w-14 px-5 py-3">
                     <span className="sr-only">{t('items.images')}</span>
                   </th>

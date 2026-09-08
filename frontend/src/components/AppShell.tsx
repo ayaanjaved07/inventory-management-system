@@ -49,7 +49,7 @@ export default function AppShell() {
           <span className="text-base font-semibold text-slate-900">{t('app.name')}</span>
         </div>
 
-        <nav className="space-y-0.5 p-3">
+        <nav className="py-3 pr-3">
           {visible.map(({ to, labelKey, icon: Icon }) => (
             <NavLink
               key={to}
@@ -58,10 +58,10 @@ export default function AppShell() {
               onClick={() => setOpen(false)}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  'flex items-center gap-3 border-l-2 px-3 py-2 text-sm transition-colors',
                   isActive
-                    ? 'bg-teal-50 text-teal-800'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                    ? 'border-teal-700 bg-teal-50 font-semibold text-teal-800'
+                    : 'border-transparent font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900',
                 )
               }
             >

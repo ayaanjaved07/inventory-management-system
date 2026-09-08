@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Boxes } from 'lucide-react'
 
 import { useAuth } from '@/lib/auth'
 import { apiError } from '@/lib/api'
@@ -41,19 +40,19 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-slate-50 px-4 py-12">
+    <div className="ruled-paper flex min-h-full items-center justify-center bg-slate-50 px-4 py-12">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-teal-700">
-            <Boxes className="h-6 w-6 text-white" />
-          </div>
-          <h1 className="text-xl font-semibold text-slate-900">{t('app.name')}</h1>
-        </div>
-
+        {/* The lac-red margin rule down the binding edge is the one flourish on
+            this screen; everything else stays quiet. */}
         <form
           onSubmit={onSubmit}
-          className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+          className="space-y-4 border border-l-[3px] border-slate-200 border-l-red-700 bg-white p-6"
         >
+          <div className="mb-6">
+            <h1 className="text-xl font-semibold text-slate-900">{t('app.name')}</h1>
+            <p className="mt-1 text-sm text-slate-500">{t('auth.tagline')}</p>
+          </div>
+
           {error && <ErrorNote message={error} />}
 
           <Field label={t('auth.username')}>

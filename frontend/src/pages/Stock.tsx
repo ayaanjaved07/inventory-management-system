@@ -183,8 +183,8 @@ export default function Stock() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-left">
-                <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <thead className="ledger-head bg-slate-50 text-left">
+                <tr className="text-xs font-semibold text-slate-600">
                   <th className="px-5 py-3">{t('stock.date')}</th>
                   <th className="px-5 py-3">{t('stock.item')}</th>
                   <th className="px-5 py-3">{t('stock.type')}</th>

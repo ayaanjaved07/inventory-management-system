@@ -18,7 +18,8 @@
     "password": "Password",
     "signingIn": "Signing in...",
     "signOut": "Sign out",
-    "failed": "Sign in failed. Check your username and password."
+    "failed": "Sign in failed. Check your username and password.",
+    "tagline": "Stock ledger, projects and sales register."
   },
   "dashboard": {
     "title": "Dashboard",

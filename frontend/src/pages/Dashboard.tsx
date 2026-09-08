@@ -2,42 +2,35 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import {
-  AlertTriangle, FileText, FolderKanban, IndianRupee, Layers, Package, Receipt,
-} from 'lucide-react'
-import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 
 import { api } from '@/lib/api'
-import { formatCurrency, formatDateTime, formatNumber } from '@/lib/utils'
+import { cn, formatCurrency, formatDateTime, formatNumber } from '@/lib/utils'
 import type { DashboardStats, Paginated, StockMovement } from '@/lib/types'
 import { Badge, Card, CardHeader, EmptyState, ErrorNote, Spinner } from '@/components/ui'
 
-function StatCard({
-  label, value, icon: Icon, tone = 'teal',
+/* The figures read as the summary block at the foot of a folio: one ruled
+   grid, labels above, totals in ink. Not six floating cards. */
+function Stat({
+  label, value, tone = 'ink',
 }: {
   label: string
   value: string
-  icon: typeof Package
-  tone?: 'teal' | 'amber' | 'slate'
+  tone?: 'ink' | 'reserved'
 }) {
-  const tones = {
-    teal: 'bg-teal-50 text-teal-700',
-    amber: 'bg-amber-50 text-amber-700',
-    slate: 'bg-slate-100 text-slate-600',
-  }
   return (
-    <Card className="p-5">
-      <div className="flex items-start justify-between">
-        <div className="min-w-0">
-          <p className="truncate text-sm text-slate-500">{label}</p>
-          <p className="mt-1.5 text-2xl font-semibold text-slate-900">{value}</p>
-        </div>
-        <div className={`rounded-lg p-2.5 ${tones[tone]}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-    </Card>
+    <div className="-ml-px -mt-px border-l border-t border-slate-200 px-5 py-4">
+      <p className="truncate text-sm text-slate-500">{label}</p>
+      <p
+        className={cn(
+          'mt-1.5 text-2xl font-semibold tabular-nums',
+          tone === 'reserved' ? 'text-amber-700' : 'text-slate-900',
+        )}
+      >
+        {value}
+      </p>
+    </div>
   )
 }
 
@@ -77,46 +70,22 @@ export default function Dashboard() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold text-slate-900">{t('dashboard.title')}</h1>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label={t('dashboard.totalItems')}
-          value={formatNumber(data.total_items)}
-          icon={Package}
-        />
-        <StatCard
-          label={t('dashboard.totalUnits')}
-          value={formatNumber(data.total_units)}
-          icon={Layers}
-        />
-        <StatCard
-          label={t('dashboard.stockValue')}
-          value={formatCurrency(data.stock_value)}
-          icon={IndianRupee}
-        />
-        <StatCard
+      <Card className="grid grid-cols-1 overflow-hidden sm:grid-cols-2 lg:grid-cols-3">
+        <Stat label={t('dashboard.totalItems')} value={formatNumber(data.total_items)} />
+        <Stat label={t('dashboard.totalUnits')} value={formatNumber(data.total_units)} />
+        <Stat label={t('dashboard.stockValue')} value={formatCurrency(data.stock_value)} />
+        <Stat
           label={t('dashboard.lowStock')}
           value={formatNumber(data.low_stock_count)}
-          icon={AlertTriangle}
-          tone={data.low_stock_count > 0 ? 'amber' : 'slate'}
+          tone={data.low_stock_count > 0 ? 'reserved' : 'ink'}
         />
-        <StatCard
+        <Stat
           label={t('dashboard.revenue30d')}
           value={formatCurrency(data.revenue_30d, data.base_currency)}
-          icon={Receipt}
         />
-        <StatCard
-          label={t('dashboard.invoices')}
-          value={formatNumber(data.invoice_count)}
-          icon={FileText}
-          tone="slate"
-        />
-        <StatCard
-          label={t('dashboard.activeProjects')}
-          value={formatNumber(data.active_projects)}
-          icon={FolderKanban}
-          tone="slate"
-        />
-      </div>
+        <Stat label={t('dashboard.invoices')} value={formatNumber(data.invoice_count)} />
+        <Stat label={t('dashboard.activeProjects')} value={formatNumber(data.active_projects)} />
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
@@ -127,18 +96,18 @@ export default function Dashboard() {
             <div className="h-72 p-4">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 8, left: -12 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-                  <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e1d8" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6f6a5e' }} stroke="#d0cabd" />
+                  <YAxis tick={{ fontSize: 11, fill: '#6f6a5e' }} stroke="#d0cabd" allowDecimals={false} />
                   <Tooltip
                     contentStyle={{
-                      borderRadius: 8,
-                      border: '1px solid #e2e8f0',
+                      borderRadius: 4,
+                      border: '1px solid #e5e1d8',
                       fontSize: 12,
                     }}
                   />
-                  <Bar dataKey={t('items.onHand')} fill="#0f766e" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey={t('items.reorderPoint')} fill="#fbbf24" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey={t('items.onHand')} fill="#2e4374" radius={[1, 1, 0, 0]} />
+                  <Bar dataKey={t('items.reorderPoint')} fill="#d3a63f" radius={[1, 1, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -165,9 +134,10 @@ export default function Dashboard() {
                     >
                       {m.item_name}
                     </Link>
-                    <p className="truncate text-xs text-slate-500">
-                      {m.movement_type_display} &middot; {m.location_code}
-                      {m.created_by_name ? ` · ${m.created_by_name}` : ''}
+                    <p className="flex gap-2.5 truncate text-xs text-slate-500">
+                      <span>{m.movement_type_display}</span>
+                      <span className="font-mono">{m.location_code}</span>
+                      {m.created_by_name && <span>{m.created_by_name}</span>}
                     </p>
                   </div>
                   <span className="shrink-0 text-xs text-slate-400">

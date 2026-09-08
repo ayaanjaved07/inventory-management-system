@@ -1,19 +1,88 @@
 /* Font import MUST come first: CSS requires @import rules to precede all other
    rules, and Tailwind's layer expands into rules. */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
+/* The palette is a ledger, not a dashboard: ink on paper, ruled in warm grey.
+   Tailwind's default ramps are overridden in place rather than renamed, so the
+   ~250 existing `slate-*` / `teal-*` classes pick this up without markup churn.
+   Read the names as roles: slate = paper..ink, teal = indigo (actions),
+   amber = haldi (reserved), red = lac (stock leaving), green = ledger green. */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Paper through ink. Warm neutrals that cool into a blue-black at the top,
+     the way real ink sits on real paper. */
+  --color-slate-50: #faf9f6;
+  --color-slate-100: #f3f1eb;
+  --color-slate-200: #e5e1d8;
+  --color-slate-300: #d0cabd;
+  /* Darker than a 400 usually sits: every use of it in this app is text,
+     and the lighter value only reached 2.5:1 on white. */
+  --color-slate-400: #767061;
+  --color-slate-500: #6f6a5e;
+  --color-slate-600: #56534a;
+  --color-slate-700: #403e38;
+  --color-slate-800: #2c2e33;
+  --color-slate-900: #1e2733;
+
+  /* Indigo: the account-book ink, and what actions are written in. */
+  --color-teal-50: #edf0f7;
+  --color-teal-100: #dce2f0;
+  --color-teal-200: #c3cde4;
+  --color-teal-300: #9daecf;
+  --color-teal-400: #6c82b2;
+  --color-teal-500: #45608f;
+  --color-teal-600: #35508a;
+  --color-teal-700: #2e4374;
+  --color-teal-800: #253760;
+  --color-teal-900: #1c2a4a;
+
+  /* Haldi: reserved, allocated, low — stock that is spoken for but not gone. */
+  --color-amber-50: #fbf3e0;
+  --color-amber-100: #f6e7c4;
+  --color-amber-200: #efd79b;
+  --color-amber-300: #e4c270;
+  --color-amber-400: #d3a63f;
+  --color-amber-500: #b98a1e;
+  --color-amber-600: #a87a15;
+  --color-amber-700: #9a6b12;
+  --color-amber-800: #7c550d;
+  --color-amber-900: #5f410a;
+
+  /* Lac: stock leaving, and errors. Ledgers have written these in red for
+     four hundred years. */
+  --color-red-50: #fbedea;
+  --color-red-100: #f6d9d3;
+  --color-red-200: #edb9ae;
+  --color-red-300: #de9184;
+  --color-red-400: #c96a59;
+  --color-red-500: #b54e3d;
+  --color-red-600: #a8392a;
+  --color-red-700: #8e2f23;
+  --color-red-800: #74271d;
+  --color-red-900: #5a1e16;
+
+  --color-green-100: #dde7d9;
+  --color-green-800: #3a5a38;
+
+  /* Ruled, not rounded. Enough radius to stay soft on screen, not enough to
+     read as a card kit. */
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 5px;
 }
 
 :root {
-  --bg: #f8fafc;
+  --bg: #faf9f6;
   --surface: #ffffff;
-  --border: #e2e8f0;
-  --text: #0f172a;
-  --muted: #64748b;
-  --brand: #0f766e;
+  --border: #e5e1d8;
+  --text: #1e2733;
+  --muted: #6f6a5e;
+  --brand: #2e4374;
 }
 
 html,
@@ -27,6 +96,37 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Plex Sans is a touch wide; large text needs the tracking pulled in. */
+h1,
+h2,
+h3 {
+  letter-spacing: -0.012em;
+}
+
+/* This is a ledger: quantities, costs and totals have to align digit-for-digit
+   down a column, so every table gets fixed-width figures. Same for the mono
+   columns, where SKUs are identifiers rather than prose. */
+table,
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* An account book draws a double rule under its column heads and above a
+   total. Border-style: double is literally that. */
+.ledger-head {
+  border-bottom: 3px double var(--color-slate-300);
+}
+
+/* Account-book ruling. The lines land on the 32px rhythm the sign-in panel
+   sets, so type sits between them rather than across them. */
+.ruled-paper {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 31px,
+    color-mix(in srgb, var(--color-slate-300) 55%, transparent) 31px 32px
+  );
 }
 
 *:focus-visible {

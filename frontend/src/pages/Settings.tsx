@@ -168,8 +168,8 @@ export default function Settings() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-left">
-                <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <thead className="ledger-head bg-slate-50 text-left">
+                <tr className="text-xs font-semibold text-slate-600">
                   <th className="px-5 py-3">{t('auth.username')}</th>
                   <th className="px-5 py-3">{t('settings.email')}</th>
                   <th className="px-5 py-3">{t('settings.role')}</th>
@@ -246,8 +246,8 @@ export default function Settings() {
         />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-left">
-              <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <thead className="ledger-head bg-slate-50 text-left">
+              <tr className="text-xs font-semibold text-slate-600">
                 <th className="px-5 py-3">{t('settings.canWrite')}</th>
                 {ROLES.map((r) => (
                   <th key={r} className="px-5 py-3 text-center">{r}</th>

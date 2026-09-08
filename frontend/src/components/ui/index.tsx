@@ -39,7 +39,7 @@ export function Button({
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={cn('rounded-xl border border-slate-200 bg-white shadow-sm', className)}>
+    <div className={cn('rounded-lg border border-slate-200 bg-white', className)}>
       {children}
     </div>
   )
@@ -100,14 +100,19 @@ export function Badge({
   tone = 'slate', children,
 }: { tone?: 'slate' | 'green' | 'amber' | 'red' | 'teal'; children: ReactNode }) {
   const tones = {
-    slate: 'bg-slate-100 text-slate-700',
-    green: 'bg-green-100 text-green-800',
-    amber: 'bg-amber-100 text-amber-800',
-    red: 'bg-red-100 text-red-800',
-    teal: 'bg-teal-100 text-teal-800',
+    slate: 'border-slate-300 bg-slate-100 text-slate-700',
+    green: 'border-green-800/25 bg-green-100 text-green-800',
+    amber: 'border-amber-700/30 bg-amber-50 text-amber-800',
+    red: 'border-red-700/30 bg-red-50 text-red-800',
+    teal: 'border-teal-700/25 bg-teal-50 text-teal-800',
   }
   return (
-    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', tones[tone])}>
+    <span
+      className={cn(
+        'inline-flex rounded-xs border px-1.5 py-0.5 text-xs font-medium tabular-nums',
+        tones[tone],
+      )}
+    >
       {children}
     </span>
   )

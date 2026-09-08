@@ -172,11 +172,11 @@ export default function Sales() {
             ) : (
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e1d8" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6f6a5e' }} stroke="#d0cabd" />
+                  <YAxis tick={{ fontSize: 12, fill: '#6f6a5e' }} stroke="#d0cabd" />
                   <Tooltip formatter={(v) => formatCurrency(Number(v), currency)} />
-                  <Bar dataKey={t('sales.revenue')} fill="#0f766e" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey={t('sales.revenue')} fill="#2e4374" radius={[1, 1, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -388,7 +388,7 @@ export default function Sales() {
                 {openId === sale.id && (
                   <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4">
                     <table className="w-full text-sm">
-                      <thead className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <thead className="ledger-head text-left text-xs font-semibold text-slate-600">
                         <tr>
                           <th className="pb-2">{t('sales.item')}</th>
                           <th className="pb-2 text-right">{t('sales.quantity')}</th>
