@@ -1,12 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { api, tokens } from './api'
+import { NotAnAdminError } from './errors'
 import type { Role, User } from './types'
 
 interface AuthState {
   user: User | null
   loading: boolean
-  login: (username: string, password: string) => Promise<void>
+  login: (username: string, password: string, opts?: { requireAdmin?: boolean }) => Promise<void>
   logout: () => void
   hasRole: (...roles: Role[]) => boolean
 }
@@ -53,11 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth:expired', onExpired)
   }, [logout])
 
-  const login = useCallback(async (username: string, password: string) => {
-    const { data } = await api.post('/auth/token/', { username, password })
-    tokens.set(data.access, data.refresh)
-    setUser(data.user)
-  }, [])
+  const login = useCallback(
+    async (username: string, password: string, opts?: { requireAdmin?: boolean }) => {
+      const { data } = await api.post('/auth/token/', { username, password })
+      const account = data.user as User
+      // Checked before the tokens are stored, so a refused admin sign-in never
+      // half-creates a session the page then has to tear down.
+      if (opts?.requireAdmin && !account.is_superuser && !account.roles.includes('Admin')) {
+        throw new NotAnAdminError()
+      }
+      tokens.set(data.access, data.refresh)
+      setUser(account)
+    },
+    [],
+  )
 
   const hasRole = useCallback(
     (...roles: Role[]) => {

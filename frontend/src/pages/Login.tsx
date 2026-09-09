@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { useAuth } from '@/lib/auth'
+import { NotAnAdminError } from '@/lib/errors'
 import { apiError } from '@/lib/api'
 import { Button, ErrorNote, Field, Input, Spinner } from '@/components/ui'
 
@@ -13,6 +14,9 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  // Two doors into the same API. This is a wayfinding device, not a security
+  // boundary -- the backend role map is the authority on what an account may do.
+  const [asAdmin, setAsAdmin] = useState(false)
 
   if (loading) {
     return (
@@ -28,8 +32,12 @@ export default function Login() {
     setError('')
     setSubmitting(true)
     try {
-      await login(username, password)
+      await login(username, password, { requireAdmin: asAdmin })
     } catch (err) {
+      if (err instanceof NotAnAdminError) {
+        setError(t('auth.notAdmin'))
+        return
+      }
       // Show the server's message when it is useful, otherwise a generic one --
       // never leak whether the username exists.
       const detail = apiError(err)
@@ -41,16 +49,49 @@ export default function Login() {
 
   return (
     <div className="ruled-paper flex min-h-full items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-sm">
-        {/* The lac-red margin rule down the binding edge is the one flourish on
-            this screen; everything else stays quiet. */}
-        <form
-          onSubmit={onSubmit}
-          className="space-y-4 border border-l-[3px] border-slate-200 border-l-red-700 bg-white p-6"
-        >
+      {/* Cover on the left, page on the right, bound down the lac-red edge --
+          the same book the rest of the app is styled as. */}
+      <div className="grid w-full max-w-3xl border border-l-[3px] border-slate-200 border-l-red-700 bg-white md:grid-cols-[1fr_1.15fr]">
+        <div className="hidden flex-col justify-between bg-teal-900 p-8 text-white md:flex">
+          <div>
+            <h1 className="font-display text-3xl">{t('app.name')}</h1>
+          </div>
+
+          <div className="mt-10">
+            <p className="text-xs font-semibold text-teal-200">{t('auth.contents')}</p>
+            <ul className="mt-2 divide-y divide-white/15 border-t border-white/15 text-sm">
+              {['items', 'stock', 'projects', 'sales'].map((key) => (
+                <li key={key} className="py-1.5">
+                  {t(`nav.${key}`)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-4 p-6 sm:p-8">
           <div className="mb-6">
-            <h1 className="text-xl font-semibold text-slate-900">{t('app.name')}</h1>
-            <p className="mt-1 text-sm text-slate-500">{t('auth.tagline')}</p>
+            <div className="flex flex-wrap items-baseline gap-x-2.5">
+              <h2 className="text-xl font-semibold text-slate-900">{t('auth.signIn')}</h2>
+              <span className="text-sm font-medium text-slate-500">
+                {asAdmin ? t('auth.admin') : t('auth.staff')}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setAsAdmin((v) => !v)
+                setError('')
+              }}
+              className="mt-1.5 text-sm font-medium text-teal-700 underline-offset-2 hover:underline"
+            >
+              {asAdmin ? t('auth.toStaff') : t('auth.toAdmin')}
+            </button>
+
+            {asAdmin && <p className="mt-2 text-sm text-slate-500">{t('auth.adminHint')}</p>}
+
+            <h1 className="font-display mt-6 text-base text-slate-900 md:hidden">{t('app.name')}</h1>
           </div>
 
           {error && <ErrorNote message={error} />}

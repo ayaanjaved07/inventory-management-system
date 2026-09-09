@@ -1,6 +1,6 @@
 /* Font import MUST come first: CSS requires @import rules to precede all other
    rules, and Tailwind's layer expands into rules. */
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Libre+Caslon+Text:wght@400;700&display=swap");
 @import "tailwindcss";
 
 /* The palette is a ledger, not a dashboard: ink on paper, ruled in warm grey.
@@ -11,6 +11,10 @@
 @theme {
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  /* The name only. Caslon dates from 1722 and is what account books, ledgers
+     and legal print were set in for two centuries -- it earns its place on the
+     wordmark and nowhere else. */
+  --font-display: "Libre Caslon Text", ui-serif, Georgia, serif;
 
   /* Paper through ink. Warm neutrals that cool into a blue-black at the top,
      the way real ink sits on real paper. */
@@ -103,6 +107,11 @@ h1,
 h2,
 h3 {
   letter-spacing: -0.012em;
+}
+
+/* That tightening is tuned for Plex Sans; Caslon is drawn with its own fit. */
+.font-display {
+  letter-spacing: normal;
 }
 
 /* This is a ledger: quantities, costs and totals have to align digit-for-digit

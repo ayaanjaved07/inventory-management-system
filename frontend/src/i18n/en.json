@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Inventory Management System"
+    "name": "Lekha-Jokha"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -19,7 +19,13 @@
     "signingIn": "Signing in...",
     "signOut": "Sign out",
     "failed": "Sign in failed. Check your username and password.",
-    "tagline": "Stock ledger, projects and sales register."
+    "staff": "Staff",
+    "admin": "Administrator",
+    "toAdmin": "Sign in as an administrator",
+    "toStaff": "Back to staff sign-in",
+    "notAdmin": "That account does not have the Administrator role.",
+    "adminHint": "Administrator sign-in covers users, roles and system settings.",
+    "contents": "Inside"
   },
   "dashboard": {
     "title": "Dashboard",

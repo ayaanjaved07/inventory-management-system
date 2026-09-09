@@ -3,7 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Boxes, LayoutDashboard, Package, ClipboardList, FolderKanban,
-  ReceiptText, History, Bot, Settings, LogOut, Menu, X,
+  ReceiptText, History, Settings, LogOut, Menu, X,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
@@ -23,7 +23,7 @@ const NAV: NavItem[] = [
   { to: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
   { to: '/sales', labelKey: 'nav.sales', icon: ReceiptText },
   { to: '/activity', labelKey: 'nav.activity', icon: History },
-  { to: '/assistant', labelKey: 'nav.assistant', icon: Bot },
+  // The assistant route still exists; it is just not advertised in the nav.
   { to: '/settings', labelKey: 'nav.settings', icon: Settings, roles: ['Admin'] },
 ]
 
@@ -46,7 +46,7 @@ export default function AppShell() {
       >
         <div className="flex h-16 items-center gap-2.5 border-b border-slate-200 px-5">
           <Boxes className="h-6 w-6 text-teal-700" />
-          <span className="text-base font-semibold text-slate-900">{t('app.name')}</span>
+          <span className="font-display text-lg text-slate-900">{t('app.name')}</span>
         </div>
 
         <nav className="py-3 pr-3">

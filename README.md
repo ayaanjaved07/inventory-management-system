@@ -1,4 +1,6 @@
-# Inventory Management System
+# Lekha-Jokha
+
+An inventory management system: stock ledger, projects and sales.
 
 By Ayaan Javed (A2305224107) and Akhil Pratap Singh (A2305224125)
 
