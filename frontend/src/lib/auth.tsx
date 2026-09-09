@@ -1,13 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { api, tokens } from './api'
-import { NotAnAdminError } from './errors'
+import { WrongDoorError } from './errors'
 import type { Role, User } from './types'
 
 interface AuthState {
   user: User | null
   loading: boolean
-  login: (username: string, password: string, opts?: { requireAdmin?: boolean }) => Promise<void>
+  login: (username: string, password: string, opts?: { mode?: 'staff' | 'admin' }) => Promise<void>
   logout: () => void
   hasRole: (...roles: Role[]) => boolean
 }
@@ -55,14 +55,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [logout])
 
   const login = useCallback(
-    async (username: string, password: string, opts?: { requireAdmin?: boolean }) => {
+    async (username: string, password: string, opts?: { mode?: 'staff' | 'admin' }) => {
       const { data } = await api.post('/auth/token/', { username, password })
       const account = data.user as User
-      // Checked before the tokens are stored, so a refused admin sign-in never
-      // half-creates a session the page then has to tear down.
-      if (opts?.requireAdmin && !account.is_superuser && !account.roles.includes('Admin')) {
-        throw new NotAnAdminError()
-      }
+      const isAdmin = account.is_superuser || account.roles.includes('Admin')
+      // Checked before the tokens are stored, so a refused sign-in never
+      // half-creates a session the page then has to tear down. Omitting `mode`
+      // skips the check entirely, so this only applies to the sign-in screen.
+      if (opts?.mode === 'admin' && !isAdmin) throw new WrongDoorError('staff')
+      if (opts?.mode === 'staff' && isAdmin) throw new WrongDoorError('admin')
       tokens.set(data.access, data.refresh)
       setUser(account)
     },

@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { useAuth } from '@/lib/auth'
-import { NotAnAdminError } from '@/lib/errors'
+import { WrongDoorError } from '@/lib/errors'
 import { apiError } from '@/lib/api'
 import { Button, ErrorNote, Field, Input, Spinner } from '@/components/ui'
 
@@ -32,10 +32,10 @@ export default function Login() {
     setError('')
     setSubmitting(true)
     try {
-      await login(username, password, { requireAdmin: asAdmin })
+      await login(username, password, { mode: asAdmin ? 'admin' : 'staff' })
     } catch (err) {
-      if (err instanceof NotAnAdminError) {
-        setError(t('auth.notAdmin'))
+      if (err instanceof WrongDoorError) {
+        setError(err.door === 'admin' ? t('auth.useAdminSignIn') : t('auth.notAdmin'))
         return
       }
       // Show the server's message when it is useful, otherwise a generic one --
