@@ -23,9 +23,7 @@
     "admin": "Administrator",
     "toAdmin": "Sign in as an administrator",
     "toStaff": "Back to staff sign-in",
-    "notAdmin": "That account does not have the Administrator role.",
-    "adminHint": "Administrator sign-in covers users, roles and system settings.",
-    "contents": "Inside"
+    "notAdmin": "That account does not have the Administrator role."
   },
   "dashboard": {
     "title": "Dashboard",

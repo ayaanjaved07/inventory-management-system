@@ -52,21 +52,8 @@ export default function Login() {
       {/* Cover on the left, page on the right, bound down the lac-red edge --
           the same book the rest of the app is styled as. */}
       <div className="grid w-full max-w-3xl border border-l-[3px] border-slate-200 border-l-red-700 bg-white md:grid-cols-[1fr_1.15fr]">
-        <div className="hidden flex-col justify-between bg-teal-900 p-8 text-white md:flex">
-          <div>
-            <h1 className="font-display text-3xl">{t('app.name')}</h1>
-          </div>
-
-          <div className="mt-10">
-            <p className="text-xs font-semibold text-teal-200">{t('auth.contents')}</p>
-            <ul className="mt-2 divide-y divide-white/15 border-t border-white/15 text-sm">
-              {['items', 'stock', 'projects', 'sales'].map((key) => (
-                <li key={key} className="py-1.5">
-                  {t(`nav.${key}`)}
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div className="hidden flex-col justify-center bg-teal-900 p-8 text-white md:flex">
+          <h1 className="font-display text-3xl">{t('app.name')}</h1>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4 p-6 sm:p-8">
@@ -88,8 +75,6 @@ export default function Login() {
             >
               {asAdmin ? t('auth.toStaff') : t('auth.toAdmin')}
             </button>
-
-            {asAdmin && <p className="mt-2 text-sm text-slate-500">{t('auth.adminHint')}</p>}
 
             <h1 className="font-display mt-6 text-base text-slate-900 md:hidden">{t('app.name')}</h1>
           </div>
