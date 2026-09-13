@@ -1,7 +1,6 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
 
 import { AuthProvider, useAuth } from '@/lib/auth'
 import AppShell from '@/components/AppShell'
@@ -15,7 +14,6 @@ import ItemDetail from '@/pages/ItemDetail'
 import Stock from '@/pages/Stock'
 import Projects from '@/pages/Projects'
 import Sales from '@/pages/Sales'
-import Assistant from '@/pages/Assistant'
 import Activity from '@/pages/Activity'
 import Settings from '@/pages/Settings'
 
@@ -43,11 +41,10 @@ function RequireAuth({ children }: { children: ReactNode }) {
 /** Mirrors the backend role check. Convenience only -- the API is the authority. */
 function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }) {
   const { hasRole } = useAuth()
-  const { t } = useTranslation()
   if (!hasRole(...roles)) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-600">
-        {t('common.noAccess')}
+        You do not have permission to view this page.
       </div>
     )
   }
@@ -78,7 +75,6 @@ export default function App() {
               <Route path="projects" element={<Projects />} />
               <Route path="sales" element={<Sales />} />
               <Route path="activity" element={<Activity />} />
-              <Route path="assistant" element={<Assistant />} />
               <Route
                 path="settings"
                 element={

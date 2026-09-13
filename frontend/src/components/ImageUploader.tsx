@@ -1,21 +1,15 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 import { ImagePlus, Star, Trash2 } from 'lucide-react'
 
 import { api, apiError } from '@/lib/api'
 import type { ItemImage } from '@/lib/types'
 import { Button, ErrorNote, Spinner } from '@/components/ui'
 
-/**
- * Image gallery + upload for one item.
- *
- * Content-Type is deliberately never set on the FormData request: axios omits
- * it so the browser can generate the multipart boundary itself. Setting it by
- * hand produces a header with no boundary and Django parses nothing.
- */
+/* Shows an item's images and lets the user upload more.
+   We don't set Content-Type for the upload: the browser fills it in for
+   FormData. Setting it by hand breaks the upload. */
 export function ImageUploader({ itemId, canEdit }: { itemId: number | string; canEdit: boolean }) {
-  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const fileInput = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
@@ -37,8 +31,7 @@ export function ImageUploader({ itemId, canEdit }: { itemId: number | string; ca
       const body = new FormData()
       body.append('image', file)
       body.append('alt_text', file.name)
-      // First image uploaded becomes the primary one, so an item always has a
-      // thumbnail without the user having to pick one.
+      // The first image uploaded becomes the item's thumbnail.
       body.append('is_primary', (images.data?.length ?? 0) === 0 ? 'true' : 'false')
       return (await api.post<ItemImage>(`/items/${itemId}/images/`, body)).data
     },
@@ -74,7 +67,7 @@ export function ImageUploader({ itemId, canEdit }: { itemId: number | string; ca
           <Spinner className="h-6 w-6" />
         </div>
       ) : gallery.length === 0 ? (
-        <p className="text-sm text-slate-500">{t('items.noImages')}</p>
+        <p className="text-sm text-slate-500">No images yet.</p>
       ) : (
         <ul className="flex flex-wrap gap-3">
           {gallery.map((image) => (
@@ -84,12 +77,12 @@ export function ImageUploader({ itemId, canEdit }: { itemId: number | string; ca
             >
               <img
                 src={image.image}
-                alt={image.alt_text || t('items.imageAlt')}
+                alt={image.alt_text || 'Item photo'}
                 className="h-full w-full object-cover"
               />
               {image.is_primary && (
-                <span className="absolute left-1 top-1 rounded bg-teal-700 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                  {t('items.primary')}
+                <span className="absolute left-1 top-1 rounded bg-indigo-700 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                  Primary
                 </span>
               )}
               {canEdit && (
@@ -98,8 +91,8 @@ export function ImageUploader({ itemId, canEdit }: { itemId: number | string; ca
                     <button
                       className="rounded p-1 text-white hover:bg-white/20"
                       onClick={() => setPrimary.mutate(image.id)}
-                      aria-label={t('items.makePrimary')}
-                      title={t('items.makePrimary')}
+                      aria-label="Make primary"
+                      title="Make primary"
                     >
                       <Star className="h-3.5 w-3.5" />
                     </button>
@@ -107,8 +100,8 @@ export function ImageUploader({ itemId, canEdit }: { itemId: number | string; ca
                   <button
                     className="rounded p-1 text-white hover:bg-white/20"
                     onClick={() => remove.mutate(image.id)}
-                    aria-label={t('common.delete')}
-                    title={t('common.delete')}
+                    aria-label="Delete"
+                    title="Delete"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -137,7 +130,7 @@ export function ImageUploader({ itemId, canEdit }: { itemId: number | string; ca
             disabled={upload.isPending}
           >
             <ImagePlus className="h-4 w-4" />
-            {upload.isPending ? t('common.loading') : t('items.addImage')}
+            {upload.isPending ? 'Loading...' : 'Add image'}
           </Button>
         </div>
       )}

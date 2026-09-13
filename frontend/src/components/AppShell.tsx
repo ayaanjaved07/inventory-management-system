@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
 import {
   Boxes, LayoutDashboard, Package, ClipboardList, FolderKanban,
   ReceiptText, History, Settings, LogOut, Menu, X,
@@ -11,24 +10,22 @@ import type { Role } from '@/lib/types'
 
 interface NavItem {
   to: string
-  labelKey: string
+  label: string
   icon: typeof Package
   roles?: Role[]
 }
 
 const NAV: NavItem[] = [
-  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard },
-  { to: '/items', labelKey: 'nav.items', icon: Package },
-  { to: '/stock', labelKey: 'nav.stock', icon: ClipboardList },
-  { to: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
-  { to: '/sales', labelKey: 'nav.sales', icon: ReceiptText },
-  { to: '/activity', labelKey: 'nav.activity', icon: History },
-  // The assistant route still exists; it is just not advertised in the nav.
-  { to: '/settings', labelKey: 'nav.settings', icon: Settings, roles: ['Admin'] },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/items', label: 'Items', icon: Package },
+  { to: '/stock', label: 'Stock', icon: ClipboardList },
+  { to: '/projects', label: 'Projects', icon: FolderKanban },
+  { to: '/sales', label: 'Sales', icon: ReceiptText },
+  { to: '/activity', label: 'Activity', icon: History },
+  { to: '/settings', label: 'Settings', icon: Settings, roles: ['Admin'] },
 ]
 
 export default function AppShell() {
-  const { t } = useTranslation()
   const { user, logout, hasRole } = useAuth()
   const [open, setOpen] = useState(false)
 
@@ -45,12 +42,12 @@ export default function AppShell() {
         )}
       >
         <div className="flex h-16 items-center gap-2.5 border-b border-slate-200 px-5">
-          <Boxes className="h-6 w-6 text-teal-700" />
-          <span className="font-display text-lg text-slate-900">{t('app.name')}</span>
+          <Boxes className="h-6 w-6 text-indigo-700" />
+          <span className="font-display text-lg text-slate-900">Lekha-Jokha</span>
         </div>
 
         <nav className="py-3 pr-3">
-          {visible.map(({ to, labelKey, icon: Icon }) => (
+          {visible.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -60,13 +57,13 @@ export default function AppShell() {
                 cn(
                   'flex items-center gap-3 border-l-2 px-3 py-2 text-sm transition-colors',
                   isActive
-                    ? 'border-teal-700 bg-teal-50 font-semibold text-teal-800'
+                    ? 'border-indigo-700 bg-indigo-50 font-semibold text-indigo-800'
                     : 'border-transparent font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900',
                 )
               }
             >
               <Icon className="h-4.5 w-4.5" />
-              {t(labelKey)}
+              {label}
             </NavLink>
           ))}
         </nav>
@@ -99,8 +96,8 @@ export default function AppShell() {
             <button
               onClick={logout}
               className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
-              title={t('auth.signOut')}
-              aria-label={t('auth.signOut')}
+              title="Sign out"
+              aria-label="Sign out"
             >
               <LogOut className="h-5 w-5" />
             </button>

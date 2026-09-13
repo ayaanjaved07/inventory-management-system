@@ -2,10 +2,9 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api'
 
-// Access token lives in memory only -- it dies with the tab, which limits the
-// blast radius of an XSS. The refresh token has to survive a reload, so it sits
-// in localStorage: the pragmatic tradeoff for a project without a backend
-// session cookie. Noted rather than hidden.
+// The access token is kept in a variable, so it is gone when the tab closes.
+// The refresh token is saved in localStorage so the user stays logged in
+// after reloading the page.
 let accessToken: string | null = null
 const REFRESH_KEY = 'inv.refresh'
 
@@ -33,10 +32,6 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
-// Single-flight refresh: if several requests 401 at once, they all await the
-// same refresh call instead of racing and burning the rotated token.
-let refreshing: Promise<string | null> | null = null
-
 async function refreshAccessToken(): Promise<string | null> {
   const refresh = tokens.refresh
   if (!refresh) return null
@@ -50,25 +45,38 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+// AuthProvider gives us its logout function, so we can log the user out
+// when the refresh token has stopped working.
+let onSessionExpired = () => {}
+
+export function setSessionExpiredHandler(handler: () => void) {
+  onSessionExpired = handler
+}
+
+// When a request fails with 401 (access token expired), get a new access
+// token and send the same request again.
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const original = error.config as InternalAxiosRequestConfig & { _retried?: boolean }
-    const isAuthCall = original?.url?.includes('/auth/token')
+    const request = error.config as (InternalAxiosRequestConfig & { retried?: boolean }) | undefined
+    if (!request) return Promise.reject(error)
 
-    if (error.response?.status === 401 && original && !original._retried && !isAuthCall) {
-      original._retried = true
-      refreshing ??= refreshAccessToken().finally(() => {
-        refreshing = null
-      })
-      const newToken = await refreshing
-      if (newToken) {
-        original.headers.Authorization = `Bearer ${newToken}`
-        return api(original)
-      }
-      window.dispatchEvent(new CustomEvent('auth:expired'))
+    const isLoginOrRefresh = request.url?.includes('/auth/token')
+    if (error.response?.status !== 401 || request.retried || isLoginOrRefresh) {
+      return Promise.reject(error)
     }
-    return Promise.reject(error)
+
+    // Only retry a request once, so a refresh that keeps failing can't loop.
+    request.retried = true
+
+    const newToken = await refreshAccessToken()
+    if (!newToken) {
+      onSessionExpired()
+      return Promise.reject(error)
+    }
+
+    request.headers.Authorization = `Bearer ${newToken}`
+    return api(request)
   },
 )
 

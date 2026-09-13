@@ -19,16 +19,16 @@ export function formatNumber(value: number) {
   return new Intl.NumberFormat('en-IN').format(value)
 }
 
-export function formatDate(iso: string, locale = 'en-IN') {
-  return new Date(iso).toLocaleDateString(locale, {
+export function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   })
 }
 
-export function formatDateTime(iso: string, locale = 'en-IN') {
-  return new Date(iso).toLocaleString(locale, {
+export function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

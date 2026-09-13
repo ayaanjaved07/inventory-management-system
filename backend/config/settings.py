@@ -32,7 +32,6 @@ INSTALLED_APPS = [
     "stock",
     "projects",
     "sales",
-    "agent",
 ]
 
 MIDDLEWARE = [
@@ -162,10 +161,6 @@ CACHES = {
 # --------------------------------------------------------------------------
 BASE_CURRENCY = config("BASE_CURRENCY", default="INR")
 EXCHANGE_RATE_API = "https://api.frankfurter.app"
-
-# Gemini key is server-side ONLY. It must never reach the frontend bundle.
-GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
-GEMINI_MODEL = config("GEMINI_MODEL", default="gemini-2.0-flash")
 
 # Row cap for our own CSV importer (catalog/views.py).
 IMPORT_MAX_ROWS = 5000

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 import { Search } from 'lucide-react'
 
 import { api } from '@/lib/api'
@@ -11,12 +10,12 @@ import {
 } from '@/components/ui'
 import { Pagination } from '@/components/Pagination'
 
-const ACTION_TONE: Record<ActivityAction, 'green' | 'teal' | 'red' | 'slate'> = {
+const ACTION_TONE: Record<ActivityAction, 'green' | 'indigo' | 'red' | 'slate'> = {
   CREATE: 'green',
-  UPDATE: 'teal',
+  UPDATE: 'indigo',
   DELETE: 'red',
   LOGIN: 'slate',
-  IMPORT: 'teal',
+  IMPORT: 'indigo',
   EXPORT: 'slate',
 }
 
@@ -37,7 +36,6 @@ function ChangeLine({ field, from, to }: { field: string; from: unknown; to: unk
 }
 
 export default function Activity() {
-  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [action, setAction] = useState('')
   const [page, setPage] = useState(1)
@@ -56,12 +54,11 @@ export default function Activity() {
 
   const rows = activity.data?.results ?? []
   const total = activity.data?.count ?? 0
-  const locale = 'en-IN'
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">{t('nav.activity')}</h1>
+        <h1 className="text-xl font-semibold text-slate-900">Activity</h1>
       </div>
 
       <Card>
@@ -70,7 +67,7 @@ export default function Activity() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               className="pl-9"
-              placeholder={t('activity.search')}
+              placeholder="Search by record or model..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -86,7 +83,7 @@ export default function Activity() {
               setPage(1)
             }}
           >
-            <option value="">{t('common.all')}</option>
+            <option value="">All</option>
             {ACTIONS.map((a) => (
               <option key={a} value={a}>{a}</option>
             ))}
@@ -99,10 +96,10 @@ export default function Activity() {
           </div>
         ) : activity.isError ? (
           <div className="p-4">
-            <ErrorNote message={t('common.error')} />
+            <ErrorNote message="Something went wrong." />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState title={t('activity.empty')} />
+          <EmptyState title="No activity recorded yet." />
         ) : (
           <ul className="divide-y divide-slate-100">
             {rows.map((entry) => {
@@ -117,7 +114,7 @@ export default function Activity() {
 
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-slate-900">
-                      <span className="font-medium">{entry.user_name ?? t('activity.system')}</span>
+                      <span className="font-medium">{entry.user_name ?? 'System'}</span>
                       {' '}
                       <span className="text-slate-500">{entry.model_name}</span>
                       {entry.object_repr && (
@@ -138,7 +135,7 @@ export default function Activity() {
                   </div>
 
                   <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">
-                    {formatDateTime(entry.timestamp, locale)}
+                    {formatDateTime(entry.timestamp)}
                   </span>
                 </li>
               )

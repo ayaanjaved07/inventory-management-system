@@ -243,31 +243,3 @@ export interface ActivityLogEntry {
   changes: Record<string, [unknown, unknown]>
   timestamp: string
 }
-
-export interface AgentTool {
-  name: string
-  description: string
-}
-
-export interface AgentInfo {
-  available: boolean
-  tools: AgentTool[]
-}
-
-export interface ToolCall {
-  name: string
-  args: Record<string, unknown>
-}
-
-export interface ChatReply {
-  available: boolean
-  reply: string
-  tool_calls: ToolCall[]
-}
-
-export interface ChatTurn {
-  role: 'user' | 'assistant'
-  text: string
-  /** Only on assistant turns: what the answer was actually based on. */
-  tools?: ToolCall[]
-}

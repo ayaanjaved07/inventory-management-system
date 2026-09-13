@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 import { Plus, ShieldCheck } from 'lucide-react'
 
 import { api, apiError } from '@/lib/api'
@@ -12,9 +11,9 @@ import {
 
 const ROLES: Role[] = ['Admin', 'Manager', 'Storekeeper', 'Viewer']
 
-const ROLE_TONE: Record<Role, 'red' | 'teal' | 'green' | 'slate'> = {
+const ROLE_TONE: Record<Role, 'red' | 'indigo' | 'green' | 'slate'> = {
   Admin: 'red',
-  Manager: 'teal',
+  Manager: 'indigo',
   Storekeeper: 'green',
   Viewer: 'slate',
 }
@@ -41,7 +40,6 @@ const EMPTY: NewUser = {
 }
 
 export default function Settings() {
-  const { t } = useTranslation()
   const { user: currentUser } = useAuth()
   const queryClient = useQueryClient()
 
@@ -88,10 +86,10 @@ export default function Settings() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-slate-900">{t('nav.settings')}</h1>
+        <h1 className="text-xl font-semibold text-slate-900">Settings</h1>
         <Button onClick={() => setShowForm((v) => !v)}>
           <Plus className="h-4 w-4" />
-          {t('settings.newUser')}
+          New user
         </Button>
       </div>
 
@@ -107,27 +105,27 @@ export default function Settings() {
             }}
           >
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Field label={t('auth.username')}>
+              <Field label="Username">
                 <Input
                   value={form.username}
                   onChange={(e) => setForm({ ...form, username: e.target.value })}
                   required
                 />
               </Field>
-              <Field label={t('settings.fullName')}>
+              <Field label="Full name">
                 <Input
                   value={form.first_name}
                   onChange={(e) => setForm({ ...form, first_name: e.target.value })}
                 />
               </Field>
-              <Field label={t('settings.email')}>
+              <Field label="Email">
                 <Input
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
               </Field>
-              <Field label={t('auth.password')} hint={t('settings.passwordHint')}>
+              <Field label="Password" hint="At least 8 characters.">
                 <Input
                   type="password"
                   minLength={8}
@@ -136,7 +134,7 @@ export default function Settings() {
                   required
                 />
               </Field>
-              <Field label={t('settings.role')}>
+              <Field label="Role">
                 <Select
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
@@ -149,10 +147,10 @@ export default function Settings() {
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={createUser.isPending}>
-                {createUser.isPending ? t('common.loading') : t('common.save')}
+                {createUser.isPending ? 'Loading...' : 'Save'}
               </Button>
               <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
-                {t('common.cancel')}
+                Cancel
               </Button>
             </div>
           </form>
@@ -160,7 +158,7 @@ export default function Settings() {
       )}
 
       <Card>
-        <CardHeader title={t('settings.users')} />
+        <CardHeader title="Users" />
         {users.isLoading ? (
           <div className="flex justify-center py-16">
             <Spinner className="h-7 w-7" />
@@ -170,10 +168,10 @@ export default function Settings() {
             <table className="w-full text-sm">
               <thead className="ledger-head bg-slate-50 text-left">
                 <tr className="text-xs font-semibold text-slate-600">
-                  <th className="px-5 py-3">{t('auth.username')}</th>
-                  <th className="px-5 py-3">{t('settings.email')}</th>
-                  <th className="px-5 py-3">{t('settings.role')}</th>
-                  <th className="px-5 py-3">{t('items.active')}</th>
+                  <th className="px-5 py-3">Username</th>
+                  <th className="px-5 py-3">Email</th>
+                  <th className="px-5 py-3">Role</th>
+                  <th className="px-5 py-3">Active</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -186,7 +184,7 @@ export default function Settings() {
                           {u.username}
                           {isSelf && (
                             <span className="ml-2 text-xs text-slate-400">
-                              ({t('settings.you')})
+                              (you)
                             </span>
                           )}
                         </div>
@@ -199,8 +197,8 @@ export default function Settings() {
                       <td className="px-5 py-3 text-slate-600">{u.email || '—'}</td>
                       <td className="px-5 py-3">
                         {isSelf ? (
-                          // Locking yourself out of Admin is a one-way door on a
-                          // single-admin install, so it is simply not offered.
+                          // You can't edit your own roles, so an admin can't
+                          // accidentally remove their own admin access.
                           <div className="flex items-center gap-2">
                             {u.roles.map((r) => (
                               <Badge key={r} tone={ROLE_TONE[r] ?? 'slate'}>{r}</Badge>
@@ -223,7 +221,7 @@ export default function Settings() {
                       </td>
                       <td className="px-5 py-3">
                         <Badge tone={u.is_active ? 'green' : 'slate'}>
-                          {u.is_active ? t('common.yes') : t('common.no')}
+                          {u.is_active ? 'Yes' : 'No'}
                         </Badge>
                       </td>
                     </tr>
@@ -240,7 +238,7 @@ export default function Settings() {
           title={
             <span className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-slate-400" />
-              {t('settings.permissions')}
+              What each role can change
             </span>
           }
         />
@@ -248,7 +246,7 @@ export default function Settings() {
           <table className="w-full text-sm">
             <thead className="ledger-head bg-slate-50 text-left">
               <tr className="text-xs font-semibold text-slate-600">
-                <th className="px-5 py-3">{t('settings.canWrite')}</th>
+                <th className="px-5 py-3">Area</th>
                 {ROLES.map((r) => (
                   <th key={r} className="px-5 py-3 text-center">{r}</th>
                 ))}
@@ -261,7 +259,7 @@ export default function Settings() {
                   {ROLES.map((r) => (
                     <td key={r} className="px-5 py-3 text-center">
                       {roles.includes(r) ? (
-                        <span className="text-teal-700">&#10003;</span>
+                        <span className="text-indigo-700">&#10003;</span>
                       ) : (
                         <span className="text-slate-300">&ndash;</span>
                       )}

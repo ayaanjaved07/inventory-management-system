@@ -9,7 +9,6 @@ python-decouple>=3.8
 # --- features ---
 Pillow>=10.4          # ItemImage upload/validation
 requests>=2.32        # FX rates in core/services.py
-google-genai>=0.3     # /api/agent/chat/
 
 # --- deployment (Render) ---
 gunicorn>=23.0

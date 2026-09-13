@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { api, tokens } from './api'
-import { WrongDoorError } from './errors'
+import { api, setSessionExpiredHandler, tokens } from './api'
+import { WrongLoginTabError } from './errors'
 import type { Role, User } from './types'
 
 interface AuthState {
@@ -48,10 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
+  // Let api.ts log the user out when their session can't be refreshed.
   useEffect(() => {
-    const onExpired = () => logout()
-    window.addEventListener('auth:expired', onExpired)
-    return () => window.removeEventListener('auth:expired', onExpired)
+    setSessionExpiredHandler(logout)
   }, [logout])
 
   const login = useCallback(
@@ -59,11 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = await api.post('/auth/token/', { username, password })
       const account = data.user as User
       const isAdmin = account.is_superuser || account.roles.includes('Admin')
-      // Checked before the tokens are stored, so a refused sign-in never
-      // half-creates a session the page then has to tear down. Omitting `mode`
-      // skips the check entirely, so this only applies to the sign-in screen.
-      if (opts?.mode === 'admin' && !isAdmin) throw new WrongDoorError('staff')
-      if (opts?.mode === 'staff' && isAdmin) throw new WrongDoorError('admin')
+      // Check the login tab before saving the tokens, so a wrong tab doesn't
+      // leave the user half logged in.
+      if (opts?.mode === 'admin' && !isAdmin) throw new WrongLoginTabError('staff')
+      if (opts?.mode === 'staff' && isAdmin) throw new WrongLoginTabError('admin')
       tokens.set(data.access, data.refresh)
       setUser(account)
     },

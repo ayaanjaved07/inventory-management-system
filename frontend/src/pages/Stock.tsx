@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 import { Info, Plus } from 'lucide-react'
 
 import { api, apiError } from '@/lib/api'
@@ -11,13 +10,11 @@ import {
   Badge, Button, Card, CardHeader, EmptyState, ErrorNote, Field, Input, Select, Spinner,
 } from '@/components/ui'
 
-// Only the types a human records by hand. TRANSFER_*, SALE and PROJECT_* are
-// written by their own workflows, so exposing them here would let someone
-// record half of a two-sided operation.
+// Movement types a user can record on this page. Sales, transfers and project
+// movements are created by their own pages.
 const MANUAL_TYPES: MovementType[] = ['RECEIPT', 'ISSUE', 'ADJUSTMENT']
 
 export default function Stock() {
-  const { t } = useTranslation()
   const { hasRole } = useAuth()
   const queryClient = useQueryClient()
 
@@ -72,18 +69,18 @@ export default function Stock() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-slate-900">{t('stock.title')}</h1>
+        <h1 className="text-xl font-semibold text-slate-900">Stock</h1>
         {canRecord && (
           <Button onClick={() => setShowForm((v) => !v)}>
             <Plus className="h-4 w-4" />
-            {t('stock.record')}
+            Record movement
           </Button>
         )}
       </div>
 
       <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-        <p>{t('stock.ledgerNote')}</p>
+        <p>The ledger is append-only. To correct a mistake, record an adjustment.</p>
       </div>
 
       {showForm && canRecord && (
@@ -97,7 +94,7 @@ export default function Stock() {
           >
             {error && <ErrorNote message={error} />}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label={t('stock.item')}>
+              <Field label="Item">
                 <Select
                   value={form.item}
                   onChange={(e) => setForm({ ...form, item: e.target.value })}
@@ -110,7 +107,7 @@ export default function Stock() {
                 </Select>
               </Field>
 
-              <Field label={t('stock.location')}>
+              <Field label="Location">
                 <Select
                   value={form.location}
                   onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -123,7 +120,7 @@ export default function Stock() {
                 </Select>
               </Field>
 
-              <Field label={t('stock.type')}>
+              <Field label="Type">
                 <Select
                   value={form.movement_type}
                   onChange={(e) =>
@@ -137,7 +134,7 @@ export default function Stock() {
               </Field>
 
               <Field
-                label={t('stock.quantity')}
+                label="Quantity"
                 hint={isAdjustment ? 'Negative values allowed' : undefined}
               >
                 <Input
@@ -153,7 +150,7 @@ export default function Stock() {
               </Field>
             </div>
 
-            <Field label={t('stock.note')}>
+            <Field label="Note">
               <Input
                 value={form.note}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
@@ -162,10 +159,10 @@ export default function Stock() {
 
             <div className="flex gap-2">
               <Button type="submit" disabled={record.isPending}>
-                {record.isPending ? t('common.loading') : t('common.save')}
+                {record.isPending ? 'Loading...' : 'Save'}
               </Button>
               <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
-                {t('common.cancel')}
+                Cancel
               </Button>
             </div>
           </form>
@@ -173,31 +170,31 @@ export default function Stock() {
       )}
 
       <Card>
-        <CardHeader title={t('stock.movements')} />
+        <CardHeader title="Movements" />
         {movements.isLoading ? (
           <div className="flex justify-center py-16">
             <Spinner className="h-7 w-7" />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState title={t('items.empty')} />
+          <EmptyState title="No stock movements yet." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="ledger-head bg-slate-50 text-left">
                 <tr className="text-xs font-semibold text-slate-600">
-                  <th className="px-5 py-3">{t('stock.date')}</th>
-                  <th className="px-5 py-3">{t('stock.item')}</th>
-                  <th className="px-5 py-3">{t('stock.type')}</th>
-                  <th className="px-5 py-3">{t('stock.location')}</th>
-                  <th className="px-5 py-3 text-right">{t('stock.quantity')}</th>
-                  <th className="px-5 py-3">{t('stock.by')}</th>
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3">Item</th>
+                  <th className="px-5 py-3">Type</th>
+                  <th className="px-5 py-3">Location</th>
+                  <th className="px-5 py-3 text-right">Quantity</th>
+                  <th className="px-5 py-3">By</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {rows.map((m) => (
                   <tr key={m.id} className="hover:bg-slate-50">
                     <td className="whitespace-nowrap px-5 py-3 text-slate-500">
-                      {formatDateTime(m.created_at, 'en-IN')}
+                      {formatDateTime(m.created_at)}
                     </td>
                     <td className="px-5 py-3">
                       <div className="font-medium text-slate-900">{m.item_name}</div>

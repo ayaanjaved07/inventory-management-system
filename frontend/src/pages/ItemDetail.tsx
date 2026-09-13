@@ -1,6 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 import { ArrowLeft } from 'lucide-react'
 
 import { api } from '@/lib/api'
@@ -20,7 +19,6 @@ interface LocationLevel {
 
 export default function ItemDetail() {
   const { id } = useParams<{ id: string }>()
-  const { t } = useTranslation()
   const { hasRole } = useAuth()
   const canEdit = hasRole('Admin', 'Manager')
 
@@ -52,18 +50,17 @@ export default function ItemDetail() {
       </div>
     )
   }
-  if (item.isError || !item.data) return <ErrorNote message={t('common.error')} />
+  if (item.isError || !item.data) return <ErrorNote message="Something went wrong." />
 
   const data = item.data
-  const locale = 'en-IN'
 
   const facts: Array<[string, string]> = [
-    [t('items.category'), data.category_name ?? '—'],
-    [t('items.unit'), data.unit],
-    [t('items.unitCost'), formatCurrency(data.unit_cost, data.currency_code ?? 'INR')],
-    [t('items.reorderPoint'), String(data.reorder_point)],
-    [t('items.onHand'), String(data.on_hand)],
-    [t('items.active'), data.is_active ? t('common.yes') : t('common.no')],
+    ['Category', data.category_name ?? '—'],
+    ['Unit', data.unit],
+    ['Unit cost', formatCurrency(data.unit_cost, data.currency_code ?? 'INR')],
+    ['Reorder point', String(data.reorder_point)],
+    ['On hand', String(data.on_hand)],
+    ['Active', data.is_active ? 'Yes' : 'No'],
   ]
 
   return (
@@ -73,7 +70,7 @@ export default function ItemDetail() {
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800"
       >
         <ArrowLeft className="h-4 w-4" />
-        {t('items.title')}
+        Items
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -82,13 +79,13 @@ export default function ItemDetail() {
           <p className="mt-0.5 font-mono text-sm text-slate-500">{data.sku}</p>
         </div>
         <div className="flex items-center gap-3">
-          {data.is_low_stock && <Badge tone="amber">{t('dashboard.lowStock')}</Badge>}
+          {data.is_low_stock && <Badge tone="amber">Low stock</Badge>}
         </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-1">
-          <CardHeader title={t('items.title')} />
+          <CardHeader title="Details" />
           <dl className="divide-y divide-slate-100 text-sm">
             {facts.map(([label, value]) => (
               <div key={label} className="flex justify-between gap-4 px-5 py-3">
@@ -100,7 +97,7 @@ export default function ItemDetail() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <CardHeader title={t('items.byLocation')} />
+          <CardHeader title="Stock by location" />
           {levels.isLoading ? (
             <div className="flex justify-center py-10">
               <Spinner />
@@ -118,20 +115,20 @@ export default function ItemDetail() {
               ))}
             </ul>
           ) : (
-            <EmptyState title={t('items.empty')} />
+            <EmptyState title="No stock at any location." />
           )}
         </Card>
       </div>
 
       <Card>
-        <CardHeader title={t('items.images')} />
+        <CardHeader title="Images" />
         <div className="p-5 pt-0">
           <ImageUploader itemId={data.id} canEdit={canEdit} />
         </div>
       </Card>
 
       <Card>
-        <CardHeader title={t('stock.movements')} />
+        <CardHeader title="Movements" />
         {movements.isLoading ? (
           <div className="flex justify-center py-10">
             <Spinner />
@@ -141,18 +138,18 @@ export default function ItemDetail() {
             <table className="w-full text-sm">
               <thead className="ledger-head bg-slate-50 text-left">
                 <tr className="text-xs font-semibold text-slate-600">
-                  <th className="px-5 py-3">{t('stock.date')}</th>
-                  <th className="px-5 py-3">{t('stock.type')}</th>
-                  <th className="px-5 py-3">{t('stock.location')}</th>
-                  <th className="px-5 py-3 text-right">{t('stock.quantity')}</th>
-                  <th className="px-5 py-3">{t('stock.note')}</th>
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3">Type</th>
+                  <th className="px-5 py-3">Location</th>
+                  <th className="px-5 py-3 text-right">Quantity</th>
+                  <th className="px-5 py-3">Note</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {movements.data.results.map((m) => (
                   <tr key={m.id} className="hover:bg-slate-50">
                     <td className="whitespace-nowrap px-5 py-3 text-slate-500">
-                      {formatDateTime(m.created_at, locale)}
+                      {formatDateTime(m.created_at)}
                     </td>
                     <td className="px-5 py-3 text-slate-600">{m.movement_type_display}</td>
                     <td className="px-5 py-3 text-slate-600">{m.location_code}</td>
@@ -168,7 +165,7 @@ export default function ItemDetail() {
             </table>
           </div>
         ) : (
-          <EmptyState title={t('items.empty')} />
+          <EmptyState title="No movements for this item yet." />
         )}
       </Card>
     </div>

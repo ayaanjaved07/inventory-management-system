@@ -1,11 +1,10 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
-/* Small, owned-in-repo primitives in the shadcn spirit: copied source we can
-   edit, not a dependency to fight. */
+/* Small components shared by every page (buttons, inputs, cards...). */
 
 const variants = {
-  primary: 'bg-teal-700 text-white hover:bg-teal-800 disabled:bg-teal-700/50',
+  primary: 'bg-indigo-700 text-white hover:bg-indigo-800 disabled:bg-indigo-700/50',
   secondary: 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50',
   ghost: 'text-slate-600 hover:bg-slate-100',
   danger: 'bg-red-600 text-white hover:bg-red-700',
@@ -59,8 +58,8 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
     <input
       className={cn(
         'h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm',
-        'placeholder:text-slate-400 focus:border-teal-600 focus:outline-none',
-        'focus:ring-2 focus:ring-teal-600/20 disabled:bg-slate-50',
+        'placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none',
+        'focus:ring-2 focus:ring-indigo-600/20 disabled:bg-slate-50',
         className,
       )}
       {...props}
@@ -73,7 +72,7 @@ export function Select({ className, children, ...props }: SelectHTMLAttributes<H
     <select
       className={cn(
         'h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm',
-        'focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20',
+        'focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20',
         className,
       )}
       {...props}
@@ -98,13 +97,13 @@ export function Field({
 
 export function Badge({
   tone = 'slate', children,
-}: { tone?: 'slate' | 'green' | 'amber' | 'red' | 'teal'; children: ReactNode }) {
+}: { tone?: 'slate' | 'green' | 'amber' | 'red' | 'indigo'; children: ReactNode }) {
   const tones = {
     slate: 'border-slate-300 bg-slate-100 text-slate-700',
     green: 'border-green-800/25 bg-green-100 text-green-800',
     amber: 'border-amber-700/30 bg-amber-50 text-amber-800',
     red: 'border-red-700/30 bg-red-50 text-red-800',
-    teal: 'border-teal-700/25 bg-teal-50 text-teal-800',
+    indigo: 'border-indigo-700/25 bg-indigo-50 text-indigo-800',
   }
   return (
     <span
@@ -122,7 +121,7 @@ export function Spinner({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-teal-700',
+        'h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-700',
         className,
       )}
       role="status"

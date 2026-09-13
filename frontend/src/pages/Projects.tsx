@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 import { Plus, Search } from 'lucide-react'
 
 import { api, apiError } from '@/lib/api'
@@ -13,11 +12,11 @@ import {
 import { Pagination } from '@/components/Pagination'
 import { ProjectAllocations } from '@/components/ProjectAllocations'
 
-const STATUS_TONE: Record<ProjectStatus, 'slate' | 'green' | 'amber' | 'red' | 'teal'> = {
+const STATUS_TONE: Record<ProjectStatus, 'slate' | 'green' | 'amber' | 'red' | 'indigo'> = {
   PLANNING: 'slate',
   ACTIVE: 'green',
   ON_HOLD: 'amber',
-  COMPLETED: 'teal',
+  COMPLETED: 'indigo',
   CANCELLED: 'red',
 }
 
@@ -35,7 +34,6 @@ const EMPTY_FORM: ProjectForm = {
 }
 
 export default function Projects() {
-  const { t } = useTranslation()
   const { hasRole } = useAuth()
   const queryClient = useQueryClient()
 
@@ -80,12 +78,12 @@ export default function Projects() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">{t('projects.title')}</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Projects</h1>
         </div>
         {canEdit && (
           <Button onClick={() => setShowForm((v) => !v)}>
             <Plus className="h-4 w-4" />
-            {t('projects.new')}
+            New project
           </Button>
         )}
       </div>
@@ -101,21 +99,21 @@ export default function Projects() {
           >
             {formError && <ErrorNote message={formError} />}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Field label={t('projects.code')}>
+              <Field label="Code">
                 <Input
                   value={form.code}
                   onChange={(e) => setForm({ ...form, code: e.target.value })}
                   required
                 />
               </Field>
-              <Field label={t('projects.name')}>
+              <Field label="Name">
                 <Input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
                 />
               </Field>
-              <Field label={t('projects.status')}>
+              <Field label="Status">
                 <Select
                   value={form.status}
                   onChange={(e) =>
@@ -129,21 +127,21 @@ export default function Projects() {
                   <option value="CANCELLED">Cancelled</option>
                 </Select>
               </Field>
-              <Field label={t('projects.startDate')}>
+              <Field label="Start date">
                 <Input
                   type="date"
                   value={form.start_date}
                   onChange={(e) => setForm({ ...form, start_date: e.target.value })}
                 />
               </Field>
-              <Field label={t('projects.endDate')}>
+              <Field label="End date">
                 <Input
                   type="date"
                   value={form.end_date}
                   onChange={(e) => setForm({ ...form, end_date: e.target.value })}
                 />
               </Field>
-              <Field label={t('projects.description')}>
+              <Field label="Description">
                 <Input
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -152,10 +150,10 @@ export default function Projects() {
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={createProject.isPending}>
-                {createProject.isPending ? t('common.loading') : t('common.save')}
+                {createProject.isPending ? 'Loading...' : 'Save'}
               </Button>
               <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
-                {t('common.cancel')}
+                Cancel
               </Button>
             </div>
           </form>
@@ -168,7 +166,7 @@ export default function Projects() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               className="pl-9"
-              placeholder={t('projects.search')}
+              placeholder="Search projects..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -184,10 +182,10 @@ export default function Projects() {
           </div>
         ) : projects.isError ? (
           <div className="p-4">
-            <ErrorNote message={t('common.error')} />
+            <ErrorNote message="Something went wrong." />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState title={t('projects.empty')} />
+          <EmptyState title="No projects yet." />
         ) : (
           <ul className="divide-y divide-slate-100">
             {rows.map((project) => (
@@ -198,7 +196,7 @@ export default function Projects() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-medium text-teal-700">
+                      <span className="font-mono text-xs font-medium text-indigo-700">
                         {project.code}
                       </span>
                       <Badge tone={STATUS_TONE[project.status]}>{project.status_display}</Badge>
@@ -208,7 +206,7 @@ export default function Projects() {
                   <div className="flex items-center gap-4 text-sm text-slate-500">
                     {project.start_date && <span>{formatDate(project.start_date)}</span>}
                     <span>
-                      {project.allocation_count ?? 0} {t('projects.allocations').toLowerCase()}
+                      {project.allocation_count ?? 0} allocations
                     </span>
                   </div>
                 </button>

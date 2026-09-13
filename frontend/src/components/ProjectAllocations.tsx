@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 
 import { api, apiError } from '@/lib/api'
@@ -9,9 +8,9 @@ import type {
 } from '@/lib/types'
 import { Badge, Button, EmptyState, ErrorNote, Field, Input, Select, Spinner } from '@/components/ui'
 
-const TONE: Record<AllocationStatus, 'slate' | 'green' | 'amber' | 'red' | 'teal'> = {
+const TONE: Record<AllocationStatus, 'slate' | 'green' | 'amber' | 'red' | 'indigo'> = {
   RESERVED: 'amber',
-  PARTIAL: 'teal',
+  PARTIAL: 'indigo',
   ISSUED: 'green',
   RETURNED: 'slate',
   CANCELLED: 'red',
@@ -25,7 +24,6 @@ export function ProjectAllocations({
   projectId: number
   canEdit: boolean
 }) {
-  const { t } = useTranslation()
   const queryClient = useQueryClient()
 
   const [showForm, setShowForm] = useState(false)
@@ -120,7 +118,7 @@ export function ProjectAllocations({
         <div>
           <Button size="sm" variant="secondary" onClick={() => setShowForm((v) => !v)}>
             <Plus className="h-4 w-4" />
-            {t('projects.allocate')}
+            Allocate parts
           </Button>
         </div>
       )}
@@ -134,7 +132,7 @@ export function ProjectAllocations({
           }}
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label={t('projects.item')}>
+            <Field label="Item">
               <Select value={itemId} onChange={(e) => setItemId(e.target.value)} required>
                 <option value="">—</option>
                 {items.data?.results.map((i) => (
@@ -142,7 +140,7 @@ export function ProjectAllocations({
                 ))}
               </Select>
             </Field>
-            <Field label={t('projects.location')}>
+            <Field label="Location">
               <Select
                 value={locationId}
                 onChange={(e) => setLocationId(e.target.value)}
@@ -155,14 +153,10 @@ export function ProjectAllocations({
               </Select>
             </Field>
             <Field
-              label={t('projects.quantity')}
+              label="Quantity"
               hint={
                 availability.data
-                  ? t('projects.availableHint', {
-                      available: availability.data.available,
-                      onHand: availability.data.on_hand,
-                      reserved: availability.data.reserved,
-                    })
+                  ? `${availability.data.available} available of ${availability.data.on_hand} on hand (${availability.data.reserved} reserved)`
                   : undefined
               }
             >
@@ -175,13 +169,13 @@ export function ProjectAllocations({
                 required
               />
             </Field>
-            <Field label={t('projects.note')}>
+            <Field label="Note">
               <Input value={note} onChange={(e) => setNote(e.target.value)} />
             </Field>
           </div>
           <div className="flex gap-2">
             <Button size="sm" type="submit" disabled={create.isPending}>
-              {create.isPending ? t('common.loading') : t('common.save')}
+              {create.isPending ? 'Loading...' : 'Save'}
             </Button>
             <Button
               size="sm"
@@ -189,7 +183,7 @@ export function ProjectAllocations({
               variant="secondary"
               onClick={() => setShowForm(false)}
             >
-              {t('common.cancel')}
+              Cancel
             </Button>
           </div>
         </form>
@@ -200,18 +194,18 @@ export function ProjectAllocations({
           <Spinner className="h-6 w-6" />
         </div>
       ) : rows.length === 0 ? (
-        <EmptyState title={t('projects.noAllocations')} />
+        <EmptyState title="Nothing allocated to this project yet." />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full text-sm">
             <thead className="ledger-head bg-slate-50 text-left">
               <tr className="text-xs font-semibold text-slate-600">
-                <th className="px-4 py-2.5">{t('projects.item')}</th>
-                <th className="px-4 py-2.5">{t('projects.location')}</th>
-                <th className="px-4 py-2.5 text-right">{t('projects.allocated')}</th>
-                <th className="px-4 py-2.5 text-right">{t('projects.issued')}</th>
-                <th className="px-4 py-2.5 text-right">{t('projects.returned')}</th>
-                <th className="px-4 py-2.5">{t('projects.status')}</th>
+                <th className="px-4 py-2.5">Item</th>
+                <th className="px-4 py-2.5">Location</th>
+                <th className="px-4 py-2.5 text-right">Allocated</th>
+                <th className="px-4 py-2.5 text-right">Issued</th>
+                <th className="px-4 py-2.5 text-right">Returned</th>
+                <th className="px-4 py-2.5">Status</th>
                 {canEdit && <th className="px-4 py-2.5" />}
               </tr>
             </thead>
@@ -247,7 +241,7 @@ export function ProjectAllocations({
                               })
                             }
                           >
-                            {t('projects.issue')}
+                            Issue
                           </Button>
                         )}
                         {a.quantity_outstanding > 0 && (
@@ -263,7 +257,7 @@ export function ProjectAllocations({
                               })
                             }
                           >
-                            {t('projects.return')}
+                            Return
                           </Button>
                         )}
                         {/* Cancel only frees an untouched reservation; the API
@@ -275,7 +269,7 @@ export function ProjectAllocations({
                             disabled={act.isPending}
                             onClick={() => act.mutate({ id: a.id, verb: 'cancel' })}
                           >
-                            {t('projects.cancel')}
+                            Cancel
                           </Button>
                         )}
                       </div>

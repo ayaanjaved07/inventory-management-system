@@ -1,11 +1,10 @@
-/* Thrown when the credentials are valid but the wrong sign-in form was used.
-   `door` is the one the account should have gone through. It lives outside
-   auth.tsx so that file keeps exporting components only. */
-export class WrongDoorError extends Error {
-  readonly door: 'staff' | 'admin'
+/* Thrown when the password is right but the user picked the wrong login tab
+   (staff vs admin). `tab` is the tab they should have used. */
+export class WrongLoginTabError extends Error {
+  readonly tab: 'staff' | 'admin'
 
-  constructor(door: 'staff' | 'admin') {
-    super(`use the ${door} sign-in`)
-    this.door = door
+  constructor(tab: 'staff' | 'admin') {
+    super(`use the ${tab} sign-in`)
+    this.tab = tab
   }
 }
