@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group
-from rest_framework import status, viewsets
+from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -12,7 +12,12 @@ from core.services import log_activity
 
 from .models import User
 from .permissions import RoleBasedPermission
-from .serializers import LoginSerializer, UserSerializer, UserWriteSerializer
+from .serializers import (
+    LoginSerializer,
+    RegisterSerializer,
+    UserSerializer,
+    UserWriteSerializer,
+)
 
 
 class LoginView(TokenObtainPairView):
@@ -26,6 +31,22 @@ class LoginView(TokenObtainPairView):
             if user:
                 log_activity(user, ActivityLog.Action.LOGIN, user)
         return response
+
+
+class RegisterView(generics.CreateAPIView):
+    """Open sign-up, used by the register form on the login page.
+
+    AllowAny because someone registering has no account yet. What stops this
+    being a hole is RegisterSerializer, which can only make a Viewer.
+    """
+
+    serializer_class = RegisterSerializer
+    permission_classes = [AllowAny]
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        # Admins should be able to see new accounts appear in the activity log.
+        log_activity(user, ActivityLog.Action.CREATE, user)
 
 
 class MeView(APIView):

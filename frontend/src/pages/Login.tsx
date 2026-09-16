@@ -5,7 +5,8 @@ import { isAxiosError } from 'axios'
 import { useAuth } from '@/lib/auth'
 import { WrongLoginTabError } from '@/lib/errors'
 import { apiError } from '@/lib/api'
-import { Button, ErrorNote, Field, Input, Spinner } from '@/components/ui'
+import { Button, ErrorNote, Field, Input, Spinner, SuccessNote } from '@/components/ui'
+import RegisterForm from '@/components/RegisterForm'
 
 export default function Login() {
   const { user, login, loading } = useAuth()
@@ -16,6 +17,9 @@ export default function Login() {
   // Staff / admin tab. Only decides which form is shown; the backend still
   // checks what each user is allowed to do.
   const [asAdmin, setAsAdmin] = useState(false)
+  // Swaps the sign-in form for the register form on the same card.
+  const [showRegister, setShowRegister] = useState(false)
+  const [notice, setNotice] = useState('')
 
   if (loading) {
     return (
@@ -49,6 +53,16 @@ export default function Login() {
     }
   }
 
+  // Registering does not sign anyone in -- it sends them back to the sign-in
+  // form with their new username already filled in.
+  function onRegistered(newUsername: string) {
+    setShowRegister(false)
+    setUsername(newUsername)
+    setPassword('')
+    setError('')
+    setNotice('Account created. You can sign in now.')
+  }
+
   return (
     <div className="ruled-paper flex min-h-full items-center justify-center bg-slate-50 px-4 py-12">
       <div className="grid w-full max-w-3xl border border-l-[3px] border-slate-200 border-l-red-700 bg-white md:grid-cols-[1fr_1.15fr]">
@@ -56,55 +70,98 @@ export default function Login() {
           <h1 className="font-display text-3xl">Lekha-Jokha</h1>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4 p-6 sm:p-8">
-          <div className="mb-6">
-            <div className="flex flex-wrap items-baseline gap-x-2.5">
-              <h2 className="text-xl font-semibold text-slate-900">Sign in</h2>
-              <span className="text-sm font-medium text-slate-500">
-                {asAdmin ? 'Administrator' : 'Staff'}
-              </span>
+        {showRegister ? (
+          <div className="space-y-4 p-6 sm:p-8">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-slate-900">Create an account</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                New accounts get the Viewer role: you can look at everything, but not
+                change anything.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setShowRegister(false)}
+                className="mt-1.5 text-sm font-medium text-indigo-700 underline-offset-2 hover:underline"
+              >
+                Back to sign-in
+              </button>
+
+              <h1 className="font-display mt-6 text-base text-slate-900 md:hidden">Lekha-Jokha</h1>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setAsAdmin((v) => !v)
-                setError('')
-              }}
-              className="mt-1.5 text-sm font-medium text-indigo-700 underline-offset-2 hover:underline"
-            >
-              {asAdmin ? 'Back to staff sign-in' : 'Sign in as an administrator'}
-            </button>
-
-            <h1 className="font-display mt-6 text-base text-slate-900 md:hidden">Lekha-Jokha</h1>
+            <RegisterForm onDone={onRegistered} />
           </div>
+        ) : (
+          <form onSubmit={onSubmit} className="space-y-4 p-6 sm:p-8">
+            <div className="mb-6">
+              <div className="flex flex-wrap items-baseline gap-x-2.5">
+                <h2 className="text-xl font-semibold text-slate-900">Sign in</h2>
+                <span className="text-sm font-medium text-slate-500">
+                  {asAdmin ? 'Administrator' : 'Staff'}
+                </span>
+              </div>
 
-          {error && <ErrorNote message={error} />}
+              <button
+                type="button"
+                onClick={() => {
+                  setAsAdmin((v) => !v)
+                  setError('')
+                  setNotice('')
+                }}
+                className="mt-1.5 text-sm font-medium text-indigo-700 underline-offset-2 hover:underline"
+              >
+                {asAdmin ? 'Back to staff sign-in' : 'Sign in as an administrator'}
+              </button>
 
-          <Field label="Username">
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              autoFocus
-              required
-            />
-          </Field>
+              <h1 className="font-display mt-6 text-base text-slate-900 md:hidden">Lekha-Jokha</h1>
+            </div>
 
-          <Field label="Password">
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </Field>
+            {notice && <SuccessNote message={notice} />}
+            {error && <ErrorNote message={error} />}
 
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Signing in...' : 'Sign in'}
-          </Button>
-        </form>
+            <Field label="Username">
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                autoFocus
+                required
+              />
+            </Field>
+
+            <Field label="Password">
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </Field>
+
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? 'Signing in...' : 'Sign in'}
+            </Button>
+
+            {!asAdmin && (
+              <p className="text-center text-sm text-slate-500">
+                New here?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRegister(true)
+                    setError('')
+                    setNotice('')
+                  }}
+                  className="font-medium text-indigo-700 underline-offset-2 hover:underline"
+                >
+                  Create a viewer account
+                </button>
+              </p>
+            )}
+          </form>
+        )}
       </div>
     </div>
   )

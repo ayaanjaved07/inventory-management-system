@@ -2,7 +2,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import User
+from .models import Role, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -78,6 +78,48 @@ class UserWriteSerializer(serializers.ModelSerializer):
         if roles is not None:
             self._apply_roles(instance, roles)
         return instance
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    """The sign-up form on the login page.
+
+    Anyone can post to this, so it deliberately has no `roles`, `is_active` or
+    `is_staff` field. Someone who sends those gets them ignored: the only
+    account this can make is a Viewer.
+    """
+
+    # The model allows a blank email, but a sign-up form should ask for one.
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, min_length=8)
+    password2 = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "password", "password2"]
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password2"]:
+            raise serializers.ValidationError(
+                {"password2": "The two passwords do not match."}
+            )
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop("password2")
+        password = validated_data.pop("password")
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        # get_or_create, not get: on a database that has never run seed_roles
+        # this would otherwise make an account with no role at all.
+        viewer, _ = Group.objects.get_or_create(name=Role.VIEWER.value)
+        user.groups.set([viewer])
+        return user
+
+    def to_representation(self, instance):
+        # `password` and `password2` are write_only, so echo back the normal
+        # user payload instead -- it includes the roles just assigned.
+        return UserSerializer(instance, context=self.context).data
 
 
 class LoginSerializer(TokenObtainPairSerializer):
