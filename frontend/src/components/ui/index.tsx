@@ -53,6 +53,10 @@ export function CardHeader({ title, action }: { title: ReactNode; action?: React
   )
 }
 
+// The login card is black rather than the app's indigo, so its inputs pass
+// this in to get a black focus border and ring.
+export const BLACK_FOCUS = 'focus:border-black focus:ring-black/20'
+
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input

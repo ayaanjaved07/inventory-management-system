@@ -5,7 +5,7 @@ import { isAxiosError } from 'axios'
 import { useAuth } from '@/lib/auth'
 import { WrongLoginTabError } from '@/lib/errors'
 import { apiError } from '@/lib/api'
-import { Button, ErrorNote, Field, Input, Spinner, SuccessNote } from '@/components/ui'
+import { BLACK_FOCUS, Button, ErrorNote, Field, Input, Spinner, SuccessNote } from '@/components/ui'
 import RegisterForm from '@/components/RegisterForm'
 
 export default function Login() {
@@ -66,7 +66,7 @@ export default function Login() {
   return (
     <div className="ruled-paper flex min-h-full items-center justify-center bg-slate-50 px-4 py-12">
       <div className="grid w-full max-w-3xl border border-l-[3px] border-slate-200 border-l-red-700 bg-white md:grid-cols-[1fr_1.15fr]">
-        <div className="hidden flex-col justify-center bg-indigo-900 p-8 text-white md:flex">
+        <div className="hidden flex-col justify-center bg-black p-8 text-white md:flex">
           <h1 className="font-display text-3xl">Lekha-Jokha</h1>
         </div>
 
@@ -82,7 +82,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowRegister(false)}
-                className="mt-1.5 text-sm font-medium text-indigo-700 underline-offset-2 hover:underline"
+                className="mt-1.5 text-sm font-medium text-black underline-offset-2 hover:underline"
               >
                 Back to sign-in
               </button>
@@ -109,7 +109,7 @@ export default function Login() {
                   setError('')
                   setNotice('')
                 }}
-                className="mt-1.5 text-sm font-medium text-indigo-700 underline-offset-2 hover:underline"
+                className="mt-1.5 text-sm font-medium text-black underline-offset-2 hover:underline"
               >
                 {asAdmin ? 'Back to staff sign-in' : 'Sign in as an administrator'}
               </button>
@@ -122,6 +122,7 @@ export default function Login() {
 
             <Field label="Username">
               <Input
+                className={BLACK_FOCUS}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
@@ -132,6 +133,7 @@ export default function Login() {
 
             <Field label="Password">
               <Input
+                className={BLACK_FOCUS}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -140,7 +142,11 @@ export default function Login() {
               />
             </Field>
 
-            <Button type="submit" className="w-full" disabled={submitting}>
+            <Button
+              type="submit"
+              className="w-full bg-black hover:bg-neutral-800 disabled:bg-black/50"
+              disabled={submitting}
+            >
               {submitting ? 'Signing in...' : 'Sign in'}
             </Button>
 
@@ -153,7 +159,7 @@ export default function Login() {
                     setError('')
                     setNotice('')
                   }}
-                  className="font-medium text-indigo-700 underline-offset-2 hover:underline"
+                  className="font-medium text-black underline-offset-2 hover:underline"
                 >
                   Create account
                 </button>

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 
 import { api, apiError } from '@/lib/api'
-import { Button, ErrorNote, Field, Input } from '@/components/ui'
+import { BLACK_FOCUS, Button, ErrorNote, Field, Input } from '@/components/ui'
 
 // The sign-up form shown on the login page. The backend always gives a new
 // account the Viewer role, so there is nothing here to choose a role with.
@@ -40,6 +40,7 @@ export default function RegisterForm({ onDone }: { onDone: (username: string) =>
 
       <Field label="Username">
         <Input
+          className={BLACK_FOCUS}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
@@ -50,6 +51,7 @@ export default function RegisterForm({ onDone }: { onDone: (username: string) =>
 
       <Field label="Email">
         <Input
+          className={BLACK_FOCUS}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -60,6 +62,7 @@ export default function RegisterForm({ onDone }: { onDone: (username: string) =>
 
       <Field label="Password" hint="At least 8 characters.">
         <Input
+          className={BLACK_FOCUS}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -71,6 +74,7 @@ export default function RegisterForm({ onDone }: { onDone: (username: string) =>
 
       <Field label="Confirm password">
         <Input
+          className={BLACK_FOCUS}
           type="password"
           value={password2}
           onChange={(e) => setPassword2(e.target.value)}
@@ -79,7 +83,11 @@ export default function RegisterForm({ onDone }: { onDone: (username: string) =>
         />
       </Field>
 
-      <Button type="submit" className="w-full" disabled={submitting}>
+      <Button
+        type="submit"
+        className="w-full bg-black hover:bg-neutral-800 disabled:bg-black/50"
+        disabled={submitting}
+      >
         {submitting ? 'Creating account...' : 'Create account'}
       </Button>
     </form>
