@@ -145,8 +145,7 @@ export default function Login() {
             </Button>
 
             {!asAdmin && (
-              <p className="text-center text-sm text-slate-500">
-                New here?{' '}
+              <p className="text-center text-sm">
                 <button
                   type="button"
                   onClick={() => {
@@ -156,7 +155,7 @@ export default function Login() {
                   }}
                   className="font-medium text-indigo-700 underline-offset-2 hover:underline"
                 >
-                  Create a viewer account
+                  Create account
                 </button>
               </p>
             )}
