@@ -16,14 +16,13 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export default function Dashboard() {
   const stats = useApi<DashboardStats>('/stats/dashboard/')
-  const movements = useApi<Paginated<StockMovement>>('/stock/movements/')
+  const movements = useApi<Paginated<StockMovement>>('/stock/movements/?page_size=8')
 
   if (stats.error) return <p className="error">{stats.error}</p>
   if (!stats.data) return <p>Loading...</p>
 
   const data = stats.data
-  // The backend sends 25 movements; the dashboard only shows the newest 8.
-  const recent = movements.data ? movements.data.results.slice(0, 8) : []
+  const recent = movements.data ? movements.data.results : []
 
   return (
     <>

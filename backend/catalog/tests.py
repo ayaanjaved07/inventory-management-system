@@ -352,3 +352,13 @@ def test_viewer_cannot_upload_an_image(client_for, catalog):
     )
 
     assert resp.status_code == 403
+
+
+def test_list_is_25_by_default_but_page_size_can_ask_for_more(client_for, catalog):
+    """The item dropdowns ask for page_size=200; without this they got only 25."""
+    for n in range(30):
+        Item.objects.create(sku=f"BULK-{n:03d}", name=f"Item {n}")
+    client = client_for(Role.VIEWER.value)
+
+    assert len(client.get("/api/items/").json()["results"]) == 25
+    assert len(client.get("/api/items/?page_size=200").json()["results"]) == 30
