@@ -1,14 +1,12 @@
 import { Link, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
 
-import { api } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
-import { formatCurrency, formatDateTime } from '@/lib/utils'
-import type { Item, Paginated, StockMovement } from '@/lib/types'
-import { Badge, Card, CardHeader, EmptyState, ErrorNote, Spinner } from '@/components/ui'
-import { ImageUploader } from '@/components/ImageUploader'
+import { useAuth } from '../lib/auth'
+import { useApi } from '../lib/useApi'
+import { formatCurrency, formatDateTime } from '../lib/utils'
+import type { Item, Paginated, StockMovement } from '../lib/types'
+import { ImageUploader } from '../components/ImageUploader'
 
+// One row of GET /items/<id>/stock/: how many are at each location.
 interface LocationLevel {
   location_id: number
   location_code: string
@@ -16,158 +14,121 @@ interface LocationLevel {
   quantity: number
 }
 
-
 export default function ItemDetail() {
-  const { id } = useParams<{ id: string }>()
+  const { id } = useParams()
   const { hasRole } = useAuth()
   const canEdit = hasRole('Admin', 'Manager')
 
-  const item = useQuery({
-    queryKey: ['item', id],
-    queryFn: async () => (await api.get<Item>(`/items/${id}/`)).data,
-    enabled: Boolean(id),
-  })
+  const item = useApi<Item>(`/items/${id}/`)
+  const levels = useApi<LocationLevel[]>(`/items/${id}/stock/`)
+  const movements = useApi<Paginated<StockMovement>>(`/stock/movements/?item=${id}`)
 
-  const levels = useQuery({
-    queryKey: ['item', id, 'stock'],
-    queryFn: async () => (await api.get<LocationLevel[]>(`/items/${id}/stock/`)).data,
-    enabled: Boolean(id),
-  })
-
-  const movements = useQuery({
-    queryKey: ['movements', 'item', id],
-    queryFn: async () =>
-      (await api.get<Paginated<StockMovement>>('/stock/movements/', {
-        params: { item: id },
-      })).data,
-    enabled: Boolean(id),
-  })
-
-  if (item.isLoading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner className="h-8 w-8" />
-      </div>
-    )
-  }
-  if (item.isError || !item.data) return <ErrorNote message="Something went wrong." />
+  if (item.error) return <p className="error">{item.error}</p>
+  if (!item.data) return <p>Loading...</p>
 
   const data = item.data
 
-  const facts: Array<[string, string]> = [
-    ['Category', data.category_name ?? '—'],
-    ['Unit', data.unit],
-    ['Unit cost', formatCurrency(data.unit_cost, data.currency_code ?? 'INR')],
-    ['Reorder point', String(data.reorder_point)],
-    ['On hand', String(data.on_hand)],
-    ['Active', data.is_active ? 'Yes' : 'No'],
-  ]
-
   return (
-    <div className="space-y-5">
-      <Link
-        to="/items"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Items
-      </Link>
+    <>
+      <Link to="/items">&larr; Back to items</Link>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">{data.name}</h1>
-          <p className="mt-0.5 font-mono text-sm text-slate-500">{data.sku}</p>
+      <h1 style={{ marginTop: 12 }}>
+        {data.name} <span className="muted mono">{data.sku}</span>{' '}
+        {data.is_low_stock && <span className="badge amber">Low stock</span>}
+      </h1>
+
+      <div className="two-columns">
+        <div className="card">
+          <h2>Details</h2>
+          <table>
+            <tbody>
+              <tr>
+                <th>Category</th>
+                <td>{data.category_name || '-'}</td>
+              </tr>
+              <tr>
+                <th>Unit</th>
+                <td>{data.unit}</td>
+              </tr>
+              <tr>
+                <th>Unit cost</th>
+                <td>{formatCurrency(data.unit_cost, data.currency_code || 'INR')}</td>
+              </tr>
+              <tr>
+                <th>Reorder point</th>
+                <td>{data.reorder_point}</td>
+              </tr>
+              <tr>
+                <th>On hand</th>
+                <td>{data.on_hand}</td>
+              </tr>
+              <tr>
+                <th>Active</th>
+                <td>{data.is_active ? 'Yes' : 'No'}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div className="flex items-center gap-3">
-          {data.is_low_stock && <Badge tone="amber">Low stock</Badge>}
-        </div>
-      </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
-          <CardHeader title="Details" />
-          <dl className="divide-y divide-slate-100 text-sm">
-            {facts.map(([label, value]) => (
-              <div key={label} className="flex justify-between gap-4 px-5 py-3">
-                <dt className="text-slate-500">{label}</dt>
-                <dd className="text-right font-medium text-slate-900">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader title="Stock by location" />
-          {levels.isLoading ? (
-            <div className="flex justify-center py-10">
-              <Spinner />
-            </div>
-          ) : levels.data?.length ? (
-            <ul className="divide-y divide-slate-100">
-              {levels.data.map((l) => (
-                <li key={l.location_id} className="flex items-center justify-between px-5 py-3">
-                  <div>
-                    <div className="text-sm font-medium text-slate-900">{l.location_name}</div>
-                    <div className="font-mono text-xs text-slate-500">{l.location_code}</div>
-                  </div>
-                  <span className="text-sm font-semibold text-slate-900">{l.quantity}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState title="No stock at any location." />
+        <div className="card">
+          <h2>Stock by location</h2>
+          {levels.data && levels.data.length === 0 && (
+            <p className="muted">No stock at any location.</p>
           )}
-        </Card>
+          {levels.data && levels.data.length > 0 && (
+            <table>
+              <tbody>
+                {levels.data.map((level) => (
+                  <tr key={level.location_id}>
+                    <td>
+                      {level.location_name} <span className="muted mono">{level.location_code}</span>
+                    </td>
+                    <td className="num">{level.quantity}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
 
-      <Card>
-        <CardHeader title="Images" />
-        <div className="p-5 pt-0">
-          <ImageUploader itemId={data.id} canEdit={canEdit} />
-        </div>
-      </Card>
+      <div className="card">
+        <h2>Images</h2>
+        <ImageUploader itemId={data.id} canEdit={canEdit} />
+      </div>
 
-      <Card>
-        <CardHeader title="Movements" />
-        {movements.isLoading ? (
-          <div className="flex justify-center py-10">
-            <Spinner />
-          </div>
-        ) : movements.data?.results.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="ledger-head bg-slate-50 text-left">
-                <tr className="text-xs font-semibold text-slate-600">
-                  <th className="px-5 py-3">Date</th>
-                  <th className="px-5 py-3">Type</th>
-                  <th className="px-5 py-3">Location</th>
-                  <th className="px-5 py-3 text-right">Quantity</th>
-                  <th className="px-5 py-3">Note</th>
+      <div className="card">
+        <h2>Movements</h2>
+        {movements.data && movements.data.results.length === 0 && (
+          <p className="muted">No movements for this item yet.</p>
+        )}
+        {movements.data && movements.data.results.length > 0 && (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Location</th>
+                  <th className="num">Quantity</th>
+                  <th>Note</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {movements.data.results.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-5 py-3 text-slate-500">
-                      {formatDateTime(m.created_at)}
-                    </td>
-                    <td className="px-5 py-3 text-slate-600">{m.movement_type_display}</td>
-                    <td className="px-5 py-3 text-slate-600">{m.location_code}</td>
-                    <td className="px-5 py-3 text-right">
-                      <Badge tone={m.quantity > 0 ? 'green' : 'red'}>
-                        {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-3 text-slate-500">{m.note || '—'}</td>
+                  <tr key={m.id}>
+                    <td>{formatDateTime(m.created_at)}</td>
+                    <td>{m.movement_type_display}</td>
+                    <td>{m.location_code}</td>
+                    <td className="num">{m.quantity > 0 ? '+' + m.quantity : m.quantity}</td>
+                    <td>{m.note || '-'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        ) : (
-          <EmptyState title="No movements for this item yet." />
         )}
-      </Card>
-    </div>
+      </div>
+    </>
   )
 }

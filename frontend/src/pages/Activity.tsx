@@ -1,38 +1,16 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Search } from 'lucide-react'
 
-import { api } from '@/lib/api'
-import { formatDateTime } from '@/lib/utils'
-import type { ActivityAction, ActivityLogEntry, Paginated } from '@/lib/types'
-import {
-  Badge, Card, EmptyState, ErrorNote, Input, Select, Spinner,
-} from '@/components/ui'
-import { Pagination } from '@/components/Pagination'
+import { useApi } from '../lib/useApi'
+import { formatDateTime } from '../lib/utils'
+import type { ActivityLogEntry, Paginated } from '../lib/types'
+import { Pagination } from '../components/Pagination'
 
-const ACTION_TONE: Record<ActivityAction, 'green' | 'indigo' | 'red' | 'slate'> = {
-  CREATE: 'green',
-  UPDATE: 'indigo',
-  DELETE: 'red',
-  LOGIN: 'slate',
-  IMPORT: 'indigo',
-  EXPORT: 'slate',
-}
+const ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'IMPORT', 'EXPORT']
 
-const ACTIONS: ActivityAction[] = ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'IMPORT', 'EXPORT']
-
-/** Render one {field: [old, new]} pair readably. */
-function ChangeLine({ field, from, to }: { field: string; from: unknown; to: unknown }) {
-  const show = (v: unknown) =>
-    v === null || v === '' ? '—' : typeof v === 'boolean' ? String(v) : String(v)
-  return (
-    <div className="flex flex-wrap items-baseline gap-1.5 text-xs">
-      <span className="font-medium text-slate-600">{field}</span>
-      <span className="text-slate-400 line-through">{show(from)}</span>
-      <span className="text-slate-400">&rarr;</span>
-      <span className="font-medium text-slate-800">{show(to)}</span>
-    </div>
-  )
+// Show a changed value. Empty values are shown as "-".
+function show(value: unknown) {
+  if (value === null || value === '') return '-'
+  return String(value)
 }
 
 export default function Activity() {
@@ -40,111 +18,88 @@ export default function Activity() {
   const [action, setAction] = useState('')
   const [page, setPage] = useState(1)
 
-  const activity = useQuery({
-    queryKey: ['activity', search, action, page],
-    queryFn: async () =>
-      (await api.get<Paginated<ActivityLogEntry>>('/activity/', {
-        params: {
-          search: search || undefined,
-          action: action || undefined,
-          page,
-        },
-      })).data,
-  })
+  const filters = new URLSearchParams()
+  if (search) filters.set('search', search)
+  if (action) filters.set('action', action)
 
-  const rows = activity.data?.results ?? []
-  const total = activity.data?.count ?? 0
+  const activity = useApi<Paginated<ActivityLogEntry>>(`/activity/?${filters}&page=${page}`)
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">Activity</h1>
-      </div>
+    <>
+      <h1>Activity</h1>
 
-      <Card>
-        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 p-4">
-          <div className="relative min-w-56 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              className="pl-9"
-              placeholder="Search by record or model..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
-              }}
-            />
-          </div>
-          <Select
-            className="w-44"
+      <div className="card">
+        <div className="row" style={{ marginBottom: 12 }}>
+          <input
+            style={{ maxWidth: 320, marginTop: 0 }}
+            placeholder="Search by record or model..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
+          />
+          <select
+            style={{ width: 160, marginTop: 0 }}
             value={action}
             onChange={(e) => {
               setAction(e.target.value)
               setPage(1)
             }}
           >
-            <option value="">All</option>
+            <option value="">All actions</option>
             {ACTIONS.map((a) => (
-              <option key={a} value={a}>{a}</option>
+              <option key={a} value={a}>
+                {a}
+              </option>
             ))}
-          </Select>
+          </select>
         </div>
 
-        {activity.isLoading ? (
-          <div className="flex justify-center py-16">
-            <Spinner className="h-7 w-7" />
+        {activity.error && <p className="error">{activity.error}</p>}
+        {!activity.data && activity.loading && <p>Loading...</p>}
+        {activity.data && activity.data.results.length === 0 && (
+          <p className="muted">No activity recorded yet.</p>
+        )}
+        {activity.data && activity.data.results.length > 0 && (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Who</th>
+                  <th>Action</th>
+                  <th>Record</th>
+                  <th>Changes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activity.data.results.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{formatDateTime(entry.timestamp)}</td>
+                    <td>{entry.user_name || 'System'}</td>
+                    <td>
+                      <span className="badge">{entry.action_display}</span>
+                    </td>
+                    <td>
+                      {entry.model_name} {entry.object_repr}
+                    </td>
+                    <td>
+                      {Object.entries(entry.changes || {}).map(([field, [from, to]]) => (
+                        <div key={field}>
+                          {field}: {show(from)} &rarr; {show(to)}
+                        </div>
+                      ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ) : activity.isError ? (
-          <div className="p-4">
-            <ErrorNote message="Something went wrong." />
-          </div>
-        ) : rows.length === 0 ? (
-          <EmptyState title="No activity recorded yet." />
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {rows.map((entry) => {
-              const changed = Object.entries(entry.changes ?? {})
-              return (
-                <li key={entry.id} className="flex gap-4 px-5 py-4">
-                  <div className="w-20 shrink-0 pt-0.5">
-                    <Badge tone={ACTION_TONE[entry.action] ?? 'slate'}>
-                      {entry.action_display}
-                    </Badge>
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-slate-900">
-                      <span className="font-medium">{entry.user_name ?? 'System'}</span>
-                      {' '}
-                      <span className="text-slate-500">{entry.model_name}</span>
-                      {entry.object_repr && (
-                        <>
-                          {' '}
-                          <span className="font-medium">{entry.object_repr}</span>
-                        </>
-                      )}
-                    </p>
-
-                    {changed.length > 0 && (
-                      <div className="mt-1.5 space-y-0.5">
-                        {changed.map(([field, pair]) => (
-                          <ChangeLine key={field} field={field} from={pair?.[0]} to={pair?.[1]} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">
-                    {formatDateTime(entry.timestamp)}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
         )}
 
-        <Pagination page={page} total={total} onChange={setPage} />
-      </Card>
-    </div>
+        <Pagination page={page} total={activity.data ? activity.data.count : 0} onChange={setPage} />
+      </div>
+    </>
   )
 }

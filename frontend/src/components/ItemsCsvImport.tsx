@@ -1,119 +1,104 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { api, apiError } from '@/lib/api'
-import type { ImportReport } from '@/lib/types'
-import { Badge, Button, Card, ErrorNote } from '@/components/ui'
+import { apiPost, errorMessage } from '../lib/api'
+import type { ImportReport } from '../lib/types'
 
-/* The "Import CSV" panel on the Items page.
-   It sends the file twice: first as a check (nothing is saved), then again
-   with commit=true once the user clicks Apply. */
-export function ItemsCsvImport() {
-  const queryClient = useQueryClient()
+// The "Import CSV" panel on the Items page. The file is sent twice: first as
+// a check (nothing is saved), then with commit=true when the user clicks Apply.
+export function ItemsCsvImport({ onImported }: { onImported: () => void }) {
   const [file, setFile] = useState<File | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  const runImport = useMutation({
-    mutationFn: async ({ selected, commit }: { selected: File; commit: boolean }) => {
-      const body = new FormData()
-      body.append('file', selected)
-      // Content-Type is left unset on purpose: axios omits it for FormData so
-      // the browser can generate the multipart boundary.
-      const { data } = await api.post<ImportReport>('/items/import/', body, {
-        params: { commit: commit ? 'true' : 'false' },
-      })
-      return data
-    },
-    onSuccess: (data) => {
-      setReport(data)
-      setError('')
-      if (data.committed) {
-        queryClient.invalidateQueries({ queryKey: ['items'] })
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+  async function runImport(commit: boolean) {
+    if (!file) return
+    const body = new FormData()
+    body.append('file', file)
+
+    setBusy(true)
+    setError('')
+    try {
+      const result = await apiPost<ImportReport>(`/items/import/?commit=${commit}`, body)
+      setReport(result)
+      if (result.committed) {
         setFile(null)
+        onImported()
       }
-    },
-    onError: (err) => {
-      setError(apiError(err))
+    } catch (err) {
+      setError(errorMessage(err))
       setReport(null)
-    },
-  })
+    }
+    setBusy(false)
+  }
 
   return (
-    <Card className="p-5">
-      <h2 className="text-sm font-semibold text-slate-900">Import items from CSV</h2>
-      <p className="mt-1 text-xs text-slate-500">Columns: sku, name, description, category_name, unit, unit_cost, currency_code, reorder_point, is_active. Stock cannot be set by import.</p>
+    <div className="card">
+      <h2>Import items from CSV</h2>
+      <p className="muted">
+        Columns: sku, name, description, category_name, unit, unit_cost, currency_code,
+        reorder_point, is_active. Stock cannot be set by import.
+      </p>
 
-      {error && <div className="mt-4"><ErrorNote message={error} /></div>}
+      {error && <p className="error">{error}</p>}
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="row">
         <input
           type="file"
           accept=".csv,text/csv"
-          aria-label="Choose a CSV file"
-          className="text-sm file:mr-3 file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:text-slate-700"
+          style={{ width: 'auto' }}
           onChange={(e) => {
-            setFile(e.target.files?.[0] ?? null)
+            setFile(e.target.files ? e.target.files[0] : null)
             setReport(null)
           }}
         />
-        <Button
-          variant="secondary"
-          disabled={!file || runImport.isPending}
-          onClick={() => file && runImport.mutate({ selected: file, commit: false })}
-        >
+        <button className="secondary" disabled={!file || busy} onClick={() => runImport(false)}>
           Check file
-        </Button>
+        </button>
       </div>
 
       {report && (
-        <div className="mt-4 space-y-3">
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Badge tone="slate">{report.created} to create</Badge>
-            <Badge tone="slate">{report.updated} to update</Badge>
-            {report.errors.length === 0 && (
-              <Badge tone="indigo">No problems found.</Badge>
-            )}
-          </div>
+        <div style={{ marginTop: 12 }}>
+          <p>
+            {report.created} to create, {report.updated} to update.
+            {report.errors.length === 0 && ' No problems found.'}
+          </p>
 
           {report.errors.length > 0 && (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="w-full text-sm">
-                <thead className="ledger-head bg-slate-50 text-left text-xs font-semibold text-slate-600">
-                  <tr>
-                    <th className="px-4 py-2">Row</th>
-                    <th className="px-4 py-2">SKU</th>
-                    <th className="px-4 py-2">Problem</th>
+            <table>
+              <thead>
+                <tr>
+                  <th>Row</th>
+                  <th>SKU</th>
+                  <th>Problem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.errors.map((row) => (
+                  <tr key={row.row + '-' + row.sku}>
+                    <td>{row.row}</td>
+                    <td className="mono">{row.sku || '-'}</td>
+                    <td>{row.message}</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {report.errors.map((row) => (
-                    <tr key={`${row.row}-${row.sku}`}>
-                      <td className="px-4 py-2 text-slate-500">{row.row}</td>
-                      <td className="px-4 py-2 font-mono text-xs">{row.sku || '—'}</td>
-                      <td className="px-4 py-2 text-red-700">{row.message}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           )}
 
           {report.committed ? (
-            <p className="text-sm text-indigo-700">
+            <p className="success">
               Import applied: {report.created} created, {report.updated} updated.
             </p>
           ) : (
-            <Button
-              disabled={!file || report.errors.length > 0 || runImport.isPending}
-              onClick={() => file && runImport.mutate({ selected: file, commit: true })}
+            <button
+              disabled={!file || report.errors.length > 0 || busy}
+              onClick={() => runImport(true)}
             >
               Apply {report.created + report.updated} change(s)
-            </Button>
+            </button>
           )}
         </div>
       )}
-    </Card>
+    </div>
   )
 }

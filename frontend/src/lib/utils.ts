@@ -1,13 +1,7 @@
-import { clsx, type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+// Formatting helpers. 'en-IN' groups numbers the Indian way (1,00,000).
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
-
-/** Indian locale formatting -- lakh/crore grouping, not thousands. */
 export function formatCurrency(amount: number | string, currency = 'INR') {
-  const value = typeof amount === 'string' ? Number(amount) : amount
+  const value = Number(amount)
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency,

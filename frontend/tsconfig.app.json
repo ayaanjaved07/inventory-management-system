@@ -17,13 +17,6 @@
     "jsx": "react-jsx",
     "resolveJsonModule": true,
 
-    /* Path alias -- must mirror the `resolve.alias` entry in vite.config.ts,
-       or the bundler and the typechecker disagree. Paths resolve relative to
-       this file; `baseUrl` is deprecated in TS 7. */
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

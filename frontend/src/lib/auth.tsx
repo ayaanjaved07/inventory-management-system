@@ -1,13 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { api, setSessionExpiredHandler, tokens } from './api'
-import { WrongLoginTabError } from './errors'
+import { apiGet, apiPost, clearTokens, hasRefreshToken, saveTokens, setSessionExpiredHandler } from './api'
 import type { Role, User } from './types'
 
 interface AuthState {
   user: User | null
   loading: boolean
-  login: (username: string, password: string, opts?: { mode?: 'staff' | 'admin' }) => Promise<void>
+  login: (username: string, password: string, asAdmin: boolean) => Promise<void>
   logout: () => void
   hasRole: (...roles: Role[]) => boolean
 }
@@ -18,75 +17,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // On reload the access token is gone (it was in memory), but the refresh
-  // token may still be valid -- so try to restore the session before deciding
-  // the user is logged out.
-  useEffect(() => {
-    let cancelled = false
-    async function restore() {
-      if (!tokens.refresh) {
-        setLoading(false)
-        return
-      }
-      try {
-        const { data } = await api.get<User>('/auth/me/')
-        if (!cancelled) setUser(data)
-      } catch {
-        tokens.clear()
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    restore()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const logout = useCallback(() => {
-    tokens.clear()
+  function logout() {
+    clearTokens()
     setUser(null)
+  }
+
+  useEffect(() => {
+    // Let api.ts log the user out when their session can't be refreshed.
+    setSessionExpiredHandler(logout)
+
+    // On reload the access token is gone, but the refresh token may still
+    // work. Asking for /auth/me/ makes api.ts refresh it if it can.
+    if (!hasRefreshToken()) {
+      setLoading(false)
+      return
+    }
+    apiGet<User>('/auth/me/')
+      .then((me) => setUser(me))
+      .catch(() => clearTokens())
+      .finally(() => setLoading(false))
   }, [])
 
-  // Let api.ts log the user out when their session can't be refreshed.
-  useEffect(() => {
-    setSessionExpiredHandler(logout)
-  }, [logout])
+  async function login(username: string, password: string, asAdmin: boolean) {
+    const data = await apiPost<{ access: string; refresh: string; user: User }>(
+      '/auth/token/',
+      { username, password },
+    )
+    const isAdmin = data.user.is_superuser || data.user.roles.includes('Admin')
+    // Check the login tab before saving the tokens, so a wrong tab doesn't
+    // leave the user half logged in.
+    if (asAdmin && !isAdmin) {
+      throw new Error('That account does not have the Administrator role.')
+    }
+    if (!asAdmin && isAdmin) {
+      throw new Error('That is an administrator account. Use the administrator sign-in.')
+    }
+    saveTokens(data.access, data.refresh)
+    setUser(data.user)
+  }
 
-  const login = useCallback(
-    async (username: string, password: string, opts?: { mode?: 'staff' | 'admin' }) => {
-      const { data } = await api.post('/auth/token/', { username, password })
-      const account = data.user as User
-      const isAdmin = account.is_superuser || account.roles.includes('Admin')
-      // Check the login tab before saving the tokens, so a wrong tab doesn't
-      // leave the user half logged in.
-      if (opts?.mode === 'admin' && !isAdmin) throw new WrongLoginTabError('staff')
-      if (opts?.mode === 'staff' && isAdmin) throw new WrongLoginTabError('admin')
-      tokens.set(data.access, data.refresh)
-      setUser(account)
-    },
-    [],
+  // A superuser can do everything; everyone else needs one of the roles.
+  function hasRole(...roles: Role[]) {
+    if (!user) return false
+    if (user.is_superuser) return true
+    return roles.some((role) => user.roles.includes(role))
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout, hasRole }}>
+      {children}
+    </AuthContext.Provider>
   )
-
-  const hasRole = useCallback(
-    (...roles: Role[]) => {
-      if (!user) return false
-      if (user.is_superuser) return true
-      return roles.some((r) => user.roles.includes(r))
-    },
-    [user],
-  )
-
-  const value = useMemo(
-    () => ({ user, loading, login, logout, hasRole }),
-    [user, loading, login, logout, hasRole],
-  )
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useAuth(): AuthState {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')
-  return ctx
+export function useAuth() {
+  const auth = useContext(AuthContext)
+  if (!auth) throw new Error('useAuth must be used inside <AuthProvider>')
+  return auth
 }

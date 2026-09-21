@@ -1,10 +1,13 @@
-import { formatCurrency, formatDate } from '@/lib/utils'
-import type { Sale } from '@/lib/types'
+import { formatCurrency, formatDate } from '../lib/utils'
+import type { Sale } from '../lib/types'
 
-/* One sale in the list on the Sales page. Clicking it shows its lines.
-   The page decides which row is open, so only one is open at a time. */
+// One sale in the Sales table. When it is open, a second row shows its lines.
+// The page decides which sale is open, so only one is open at a time.
 export function SaleRow({
-  sale, baseCurrency, isOpen, onToggle,
+  sale,
+  baseCurrency,
+  isOpen,
+  onToggle,
 }: {
   sale: Sale
   baseCurrency: string
@@ -12,66 +15,56 @@ export function SaleRow({
   onToggle: () => void
 }) {
   return (
-    <li>
-      <button
-        className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4 text-left hover:bg-slate-50"
-        onClick={onToggle}
-      >
-        <div className="min-w-0">
-          <div className="font-mono text-xs font-medium text-indigo-700">
-            {sale.invoice_no}
-          </div>
-          <div className="mt-1 text-sm text-slate-900">
-            {sale.customer_name ?? '—'}
-          </div>
-        </div>
-        <div className="flex items-center gap-5 text-sm">
-          <span className="text-slate-500">{formatDate(sale.sale_date)}</span>
-          <span className="font-semibold text-slate-900">
-            {formatCurrency(sale.total_amount, sale.currency)}
-          </span>
-        </div>
-      </button>
+    <>
+      <tr>
+        <td className="mono">{sale.invoice_no}</td>
+        <td>{sale.customer_name || '-'}</td>
+        <td>{formatDate(sale.sale_date)}</td>
+        <td className="num">{formatCurrency(sale.total_amount, sale.currency)}</td>
+        <td>
+          <button className="secondary small" onClick={onToggle}>
+            {isOpen ? 'Hide' : 'Show'}
+          </button>
+        </td>
+      </tr>
 
       {isOpen && (
-        <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4">
-          <table className="w-full text-sm">
-            <thead className="ledger-head text-left text-xs font-semibold text-slate-600">
-              <tr>
-                <th className="pb-2">Item</th>
-                <th className="pb-2 text-right">Quantity</th>
-                <th className="pb-2 text-right">Unit price</th>
-                <th className="pb-2 text-right">Line total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {sale.lines.map((line) => (
-                <tr key={line.id}>
-                  <td className="py-2">
-                    <span className="font-mono text-xs text-slate-500">
-                      {line.item_sku}
-                    </span>{' '}
-                    {line.item_name}
-                  </td>
-                  <td className="py-2 text-right">{line.quantity}</td>
-                  <td className="py-2 text-right">
-                    {formatCurrency(line.unit_price, sale.currency)}
-                  </td>
-                  <td className="py-2 text-right font-medium">
-                    {formatCurrency(line.line_total, sale.currency)}
-                  </td>
+        <tr className="details">
+          <td colSpan={5}>
+            <table style={{ background: 'white' }}>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th className="num">Quantity</th>
+                  <th className="num">Unit price</th>
+                  <th className="num">Line total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {sale.currency !== baseCurrency && (
-            <p className="mt-3 text-xs text-slate-500">
-              {formatCurrency(sale.total_in_base_currency, baseCurrency)} @{' '}
-              {sale.exchange_rate_used} — Converted at the rate on the day of sale.
-            </p>
-          )}
-        </div>
+              </thead>
+              <tbody>
+                {sale.lines.map((line) => (
+                  <tr key={line.id}>
+                    <td>
+                      {line.item_name} <span className="muted mono">{line.item_sku}</span>
+                    </td>
+                    <td className="num">{line.quantity}</td>
+                    <td className="num">{formatCurrency(line.unit_price, sale.currency)}</td>
+                    <td className="num">{formatCurrency(line.line_total, sale.currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* A sale in another currency also shows its value in our currency,
+                at the rate saved on the day of the sale. */}
+            {sale.currency !== baseCurrency && (
+              <p className="muted">
+                {formatCurrency(sale.total_in_base_currency, baseCurrency)} at rate{' '}
+                {sale.exchange_rate_used} (the rate on the day of the sale).
+              </p>
+            )}
+          </td>
+        </tr>
       )}
-    </li>
+    </>
   )
 }

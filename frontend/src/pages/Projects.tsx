@@ -1,228 +1,114 @@
-import { useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Search } from 'lucide-react'
+import { Fragment, useState } from 'react'
 
-import { api, apiError } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
-import { formatDate } from '@/lib/utils'
-import type { Paginated, Project, ProjectStatus } from '@/lib/types'
-import {
-  Badge, Button, Card, EmptyState, ErrorNote, Field, Input, Select, Spinner,
-} from '@/components/ui'
-import { Pagination } from '@/components/Pagination'
-import { ProjectAllocations } from '@/components/ProjectAllocations'
-
-const STATUS_TONE: Record<ProjectStatus, 'slate' | 'green' | 'amber' | 'red' | 'indigo'> = {
-  PLANNING: 'slate',
-  ACTIVE: 'green',
-  ON_HOLD: 'amber',
-  COMPLETED: 'indigo',
-  CANCELLED: 'red',
-}
-
-interface ProjectForm {
-  code: string
-  name: string
-  description: string
-  status: ProjectStatus
-  start_date: string
-  end_date: string
-}
-
-const EMPTY_FORM: ProjectForm = {
-  code: '', name: '', description: '', status: 'PLANNING', start_date: '', end_date: '',
-}
+import { useAuth } from '../lib/auth'
+import { useApi } from '../lib/useApi'
+import { formatDate } from '../lib/utils'
+import type { Paginated, Project } from '../lib/types'
+import { Pagination } from '../components/Pagination'
+import { NewProjectForm } from '../components/NewProjectForm'
+import { ProjectAllocations } from '../components/ProjectAllocations'
 
 export default function Projects() {
   const { hasRole } = useAuth()
-  const queryClient = useQueryClient()
+  const canEdit = hasRole('Admin', 'Manager')
 
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [openId, setOpenId] = useState<number | null>(null)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<ProjectForm>(EMPTY_FORM)
-  const [formError, setFormError] = useState('')
+  // The project whose allocations are open. Only one at a time.
+  const [openId, setOpenId] = useState<number | null>(null)
 
-  const canEdit = hasRole('Admin', 'Manager')
-
-  const projects = useQuery({
-    queryKey: ['projects', search, page],
-    queryFn: async () =>
-      (await api.get<Paginated<Project>>('/projects/', {
-        params: { search: search || undefined, page },
-      })).data,
-  })
-
-  const createProject = useMutation({
-    mutationFn: async (payload: ProjectForm) =>
-      (await api.post<Project>('/projects/', {
-        ...payload,
-        // Django rejects '' for a nullable DateField; it wants null.
-        start_date: payload.start_date || null,
-        end_date: payload.end_date || null,
-      })).data,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-      setShowForm(false)
-      setForm(EMPTY_FORM)
-      setFormError('')
-    },
-    onError: (err) => setFormError(apiError(err)),
-  })
-
-  const rows = projects.data?.results ?? []
+  const filters = new URLSearchParams()
+  if (search) filters.set('search', search)
+  const projects = useApi<Paginated<Project>>(`/projects/?${filters}&page=${page}`)
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">Projects</h1>
-        </div>
-        {canEdit && (
-          <Button onClick={() => setShowForm((v) => !v)}>
-            <Plus className="h-4 w-4" />
-            New project
-          </Button>
-        )}
+    <>
+      <div className="page-header">
+        <h1>Projects</h1>
+        {canEdit && <button onClick={() => setShowForm(!showForm)}>New project</button>}
       </div>
 
       {showForm && canEdit && (
-        <Card className="p-5">
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault()
-              createProject.mutate(form)
-            }}
-          >
-            {formError && <ErrorNote message={formError} />}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Field label="Code">
-                <Input
-                  value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value })}
-                  required
-                />
-              </Field>
-              <Field label="Name">
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                />
-              </Field>
-              <Field label="Status">
-                <Select
-                  value={form.status}
-                  onChange={(e) =>
-                    setForm({ ...form, status: e.target.value as ProjectStatus })
-                  }
-                >
-                  <option value="PLANNING">Planning</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="ON_HOLD">On hold</option>
-                  <option value="COMPLETED">Completed</option>
-                  <option value="CANCELLED">Cancelled</option>
-                </Select>
-              </Field>
-              <Field label="Start date">
-                <Input
-                  type="date"
-                  value={form.start_date}
-                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                />
-              </Field>
-              <Field label="End date">
-                <Input
-                  type="date"
-                  value={form.end_date}
-                  onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                />
-              </Field>
-              <Field label="Description">
-                <Input
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-              </Field>
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" disabled={createProject.isPending}>
-                {createProject.isPending ? 'Loading...' : 'Save'}
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
+        <NewProjectForm
+          onSaved={() => {
+            setShowForm(false)
+            projects.reload()
+          }}
+          onCancel={() => setShowForm(false)}
+        />
       )}
 
-      <Card>
-        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 p-4">
-          <div className="relative min-w-56 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              className="pl-9"
-              placeholder="Search projects..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
-              }}
-            />
-          </div>
-        </div>
+      <div className="card">
+        <input
+          style={{ maxWidth: 320, marginTop: 0, marginBottom: 12 }}
+          placeholder="Search projects..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPage(1)
+          }}
+        />
 
-        {projects.isLoading ? (
-          <div className="flex justify-center py-16">
-            <Spinner className="h-7 w-7" />
+        {projects.error && <p className="error">{projects.error}</p>}
+        {!projects.data && projects.loading && <p>Loading...</p>}
+        {projects.data && projects.data.results.length === 0 && (
+          <p className="muted">No projects yet.</p>
+        )}
+        {projects.data && projects.data.results.length > 0 && (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Start date</th>
+                  <th className="num">Allocations</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.data.results.map((project) => (
+                  // A Fragment lets one project add two table rows.
+                  <Fragment key={project.id}>
+                    <tr>
+                      <td className="mono">{project.code}</td>
+                      <td>{project.name}</td>
+                      <td>
+                        <span className="badge">{project.status_display}</span>
+                      </td>
+                      <td>{project.start_date ? formatDate(project.start_date) : '-'}</td>
+                      <td className="num">{project.allocation_count}</td>
+                      <td>
+                        <button
+                          className="secondary small"
+                          onClick={() => setOpenId(openId === project.id ? null : project.id)}
+                        >
+                          {openId === project.id ? 'Hide' : 'Show'}
+                        </button>
+                      </td>
+                    </tr>
+                    {openId === project.id && (
+                      <tr className="details">
+                        <td colSpan={6}>
+                          <ProjectAllocations
+                            projectId={project.id}
+                            canEdit={canEdit}
+                            onChange={projects.reload}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ) : projects.isError ? (
-          <div className="p-4">
-            <ErrorNote message="Something went wrong." />
-          </div>
-        ) : rows.length === 0 ? (
-          <EmptyState title="No projects yet." />
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {rows.map((project) => (
-              <li key={project.id}>
-                <button
-                  className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4 text-left hover:bg-slate-50"
-                  onClick={() => setOpenId(openId === project.id ? null : project.id)}
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-medium text-indigo-700">
-                        {project.code}
-                      </span>
-                      <Badge tone={STATUS_TONE[project.status]}>{project.status_display}</Badge>
-                    </div>
-                    <div className="mt-1 font-medium text-slate-900">{project.name}</div>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-slate-500">
-                    {project.start_date && <span>{formatDate(project.start_date)}</span>}
-                    <span>
-                      {project.allocation_count ?? 0} allocations
-                    </span>
-                  </div>
-                </button>
-
-                {openId === project.id && (
-                  <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4">
-                    <ProjectAllocations projectId={project.id} canEdit={canEdit} />
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
         )}
 
-        <Pagination page={page} total={projects.data?.count ?? 0} onChange={setPage} />
-      </Card>
-    </div>
+        <Pagination page={page} total={projects.data ? projects.data.count : 0} onChange={setPage} />
+      </div>
+    </>
   )
 }

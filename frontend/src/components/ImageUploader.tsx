@@ -1,139 +1,95 @@
-import { useRef, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ImagePlus, Star, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import type { ChangeEvent } from 'react'
 
-import { api, apiError } from '@/lib/api'
-import type { ItemImage } from '@/lib/types'
-import { Button, ErrorNote, Spinner } from '@/components/ui'
+import { apiDelete, apiPatch, apiPost, errorMessage } from '../lib/api'
+import { useApi } from '../lib/useApi'
+import type { ItemImage } from '../lib/types'
 
-/* Shows an item's images and lets the user upload more.
-   We don't set Content-Type for the upload: the browser fills it in for
-   FormData. Setting it by hand breaks the upload. */
-export function ImageUploader({ itemId, canEdit }: { itemId: number | string; canEdit: boolean }) {
-  const queryClient = useQueryClient()
-  const fileInput = useRef<HTMLInputElement>(null)
+// Shows an item's images and lets the user add, delete or pick the main one.
+export function ImageUploader({ itemId, canEdit }: { itemId: number; canEdit: boolean }) {
+  const images = useApi<ItemImage[]>(`/items/${itemId}/images/`)
   const [error, setError] = useState('')
+  const [uploading, setUploading] = useState(false)
 
-  const images = useQuery({
-    queryKey: ['item-images', itemId],
-    queryFn: async () => (await api.get<ItemImage[]>(`/items/${itemId}/images/`)).data,
-  })
+  const gallery = images.data || []
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['item-images', itemId] })
-    // The list and detail views embed primary_image, so they are stale too.
-    queryClient.invalidateQueries({ queryKey: ['items'] })
-    queryClient.invalidateQueries({ queryKey: ['item', String(itemId)] })
+  async function upload(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.target
+    if (!input.files || input.files.length === 0) return
+    const file = input.files[0]
+
+    const body = new FormData()
+    body.append('image', file)
+    body.append('alt_text', file.name)
+    // The first image uploaded becomes the item's main picture.
+    body.append('is_primary', gallery.length === 0 ? 'true' : 'false')
+
+    setUploading(true)
+    try {
+      await apiPost(`/items/${itemId}/images/`, body)
+      setError('')
+      images.reload()
+    } catch (err) {
+      setError(errorMessage(err))
+    }
+    setUploading(false)
+    // Clear the file input so the same file can be picked again.
+    input.value = ''
   }
 
-  const upload = useMutation({
-    mutationFn: async (file: File) => {
-      const body = new FormData()
-      body.append('image', file)
-      body.append('alt_text', file.name)
-      // The first image uploaded becomes the item's thumbnail.
-      body.append('is_primary', (images.data?.length ?? 0) === 0 ? 'true' : 'false')
-      return (await api.post<ItemImage>(`/items/${itemId}/images/`, body)).data
-    },
-    onSuccess: () => {
-      setError('')
-      invalidate()
-      if (fileInput.current) fileInput.current.value = ''
-    },
-    onError: (err) => setError(apiError(err)),
-  })
+  async function makePrimary(id: number) {
+    try {
+      await apiPatch(`/item-images/${id}/`, { is_primary: true })
+      images.reload()
+    } catch (err) {
+      setError(errorMessage(err))
+    }
+  }
 
-  const setPrimary = useMutation({
-    mutationFn: async (id: number) =>
-      (await api.patch(`/item-images/${id}/`, { is_primary: true })).data,
-    onSuccess: invalidate,
-    onError: (err) => setError(apiError(err)),
-  })
-
-  const remove = useMutation({
-    mutationFn: async (id: number) => api.delete(`/item-images/${id}/`),
-    onSuccess: invalidate,
-    onError: (err) => setError(apiError(err)),
-  })
-
-  const gallery = images.data ?? []
+  async function remove(id: number) {
+    try {
+      await apiDelete(`/item-images/${id}/`)
+      images.reload()
+    } catch (err) {
+      setError(errorMessage(err))
+    }
+  }
 
   return (
-    <div className="space-y-3">
-      {error && <ErrorNote message={error} />}
+    <>
+      {error && <p className="error">{error}</p>}
 
-      {images.isLoading ? (
-        <div className="flex justify-center py-8">
-          <Spinner className="h-6 w-6" />
-        </div>
-      ) : gallery.length === 0 ? (
-        <p className="text-sm text-slate-500">No images yet.</p>
-      ) : (
-        <ul className="flex flex-wrap gap-3">
-          {gallery.map((image) => (
-            <li
-              key={image.id}
-              className="group relative h-28 w-28 overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
-            >
-              <img
-                src={image.image}
-                alt={image.alt_text || 'Item photo'}
-                className="h-full w-full object-cover"
-              />
-              {image.is_primary && (
-                <span className="absolute left-1 top-1 rounded bg-indigo-700 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                  Primary
-                </span>
-              )}
-              {canEdit && (
-                <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-slate-900/60 p-1 opacity-0 transition group-hover:opacity-100">
-                  {!image.is_primary && (
-                    <button
-                      className="rounded p-1 text-white hover:bg-white/20"
-                      onClick={() => setPrimary.mutate(image.id)}
-                      aria-label="Make primary"
-                      title="Make primary"
-                    >
-                      <Star className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  <button
-                    className="rounded p-1 text-white hover:bg-white/20"
-                    onClick={() => remove.mutate(image.id)}
-                    aria-label="Delete"
-                    title="Delete"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
+      {images.loading && !images.data && <p>Loading...</p>}
+      {images.data && gallery.length === 0 && <p className="muted">No images yet.</p>}
+
+      <div className="gallery">
+        {gallery.map((image) => (
+          <div key={image.id}>
+            <img src={image.image} alt={image.alt_text || 'Item photo'} />
+            {image.is_primary && <span className="badge green">Main</span>}
+            {canEdit && (
+              <div className="row" style={{ marginTop: 4 }}>
+                {!image.is_primary && (
+                  <button className="secondary small" onClick={() => makePrimary(image.id)}>
+                    Make main
                   </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+                )}
+                <button className="secondary small" onClick={() => remove(image.id)}>
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
       {canEdit && (
-        <div className="flex items-center gap-3">
-          <input
-            ref={fileInput}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) upload.mutate(file)
-            }}
-          />
-          <Button
-            variant="secondary"
-            onClick={() => fileInput.current?.click()}
-            disabled={upload.isPending}
-          >
-            <ImagePlus className="h-4 w-4" />
-            {upload.isPending ? 'Loading...' : 'Add image'}
-          </Button>
-        </div>
+        <label>
+          Add image
+          <input type="file" accept="image/*" disabled={uploading} onChange={upload} />
+          {uploading && <span className="hint">Uploading...</span>}
+        </label>
       )}
-    </div>
+    </>
   )
 }
