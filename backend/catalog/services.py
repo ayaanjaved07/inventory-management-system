@@ -21,6 +21,7 @@ from __future__ import annotations
 import csv
 import io
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
@@ -40,6 +41,7 @@ CSV_COLUMNS = [
     "unit_cost",
     "currency_code",
     "reorder_point",
+    "expiry_date",
     "is_active",
     "on_hand",
 ]
@@ -72,6 +74,7 @@ def export_items_csv(items) -> str:
                 "unit_cost": item.unit_cost,
                 "currency_code": item.currency.code if item.currency else "",
                 "reorder_point": item.reorder_point,
+                "expiry_date": item.expiry_date.isoformat() if item.expiry_date else "",
                 "is_active": "true" if item.is_active else "false",
                 # Read-only context for whoever opens the file; ignored on import.
                 "on_hand": getattr(item, "on_hand", ""),
@@ -189,6 +192,13 @@ def _parse_row(row: dict, categories: dict, currencies: dict) -> dict:
     if reorder_point < 0:
         raise ValueError("reorder_point: must not be negative")
 
+    # Optional. Blank means the item does not expire.
+    raw_expiry = (row.get("expiry_date") or "").strip()
+    try:
+        expiry_date = date.fromisoformat(raw_expiry) if raw_expiry else None
+    except ValueError:
+        raise ValueError(f"expiry_date: expected YYYY-MM-DD, got {raw_expiry!r}") from None
+
     return {
         "sku": sku,
         "name": name,
@@ -198,6 +208,7 @@ def _parse_row(row: dict, categories: dict, currencies: dict) -> dict:
         "unit_cost": unit_cost,
         "currency": _resolve_currency(row.get("currency_code", ""), currencies),
         "reorder_point": reorder_point,
+        "expiry_date": expiry_date,
         # A re-imported SKU is reactivated unless the file says otherwise. Soft
         # deletes exist to protect ledger history, not to blocklist the SKU.
         "is_active": _parse_bool(row.get("is_active", ""), default=True),

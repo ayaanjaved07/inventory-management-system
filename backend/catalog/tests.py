@@ -362,3 +362,84 @@ def test_list_is_25_by_default_but_page_size_can_ask_for_more(client_for, catalo
 
     assert len(client.get("/api/items/").json()["results"]) == 25
     assert len(client.get("/api/items/?page_size=200").json()["results"]) == 30
+
+
+# --------------------------------------------------------------------------
+# Item filters, expiry and the dashboard
+# --------------------------------------------------------------------------
+@pytest.fixture
+def stocked(db, location, user):
+    """Three items: one empty, one low, one well stocked."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    today = timezone.localdate()
+    empty = Item.objects.create(sku="EMPTY", name="Empty", reorder_point=5)
+    low = Item.objects.create(
+        sku="LOW", name="Low", reorder_point=10, expiry_date=today + timedelta(days=5)
+    )
+    full = Item.objects.create(
+        sku="FULL", name="Full", reorder_point=10, expiry_date=today - timedelta(days=1)
+    )
+    record_movement(item=low, location=location, quantity=4,
+                    movement_type=MovementType.RECEIPT, user=user)
+    record_movement(item=full, location=location, quantity=50,
+                    movement_type=MovementType.RECEIPT, user=user)
+    return {"empty": empty, "low": low, "full": full}
+
+
+def skus(response):
+    return sorted(row["sku"] for row in response.data["results"])
+
+
+def test_items_filter_by_stock_status(client_for, stocked):
+    client = client_for(Role.VIEWER.value)
+    assert skus(client.get("/api/items/?stock=out")) == ["EMPTY"]
+    assert skus(client.get("/api/items/?stock=low")) == ["EMPTY", "LOW"]
+    assert skus(client.get("/api/items/?stock=ok")) == ["FULL"]
+
+
+def test_items_filter_by_stock_range(client_for, stocked):
+    client = client_for(Role.VIEWER.value)
+    assert skus(client.get("/api/items/?min_stock=1&max_stock=10")) == ["LOW"]
+    # A non-number is ignored rather than causing a 500.
+    assert client.get("/api/items/?min_stock=abc").status_code == 200
+
+
+def test_items_filter_by_expiry(client_for, stocked):
+    client = client_for(Role.VIEWER.value)
+    assert skus(client.get("/api/items/?expiry=expired")) == ["FULL"]
+    assert skus(client.get("/api/items/?expiry=soon")) == ["LOW"]
+    assert skus(client.get("/api/items/?expiry=none")) == ["EMPTY"]
+
+
+def test_items_can_be_sorted_by_on_hand(client_for, stocked):
+    client = client_for(Role.VIEWER.value)
+    rows = client.get("/api/items/?ordering=-on_hand").data["results"]
+    assert [r["sku"] for r in rows] == ["FULL", "LOW", "EMPTY"]
+
+
+def test_expiry_status_is_sent_with_the_item(client_for, stocked):
+    client = client_for(Role.VIEWER.value)
+    row = client.get(f"/api/items/{stocked['full'].id}/").data
+    assert row["expiry_status"] == "expired"
+
+
+def test_expiry_date_round_trips_through_csv(client_for, catalog):
+    client = client_for(Role.MANAGER.value)
+    Item.objects.create(sku="MILK", name="Milk", expiry_date="2026-12-31")
+    body = client.get("/api/items/export/").content.decode("utf-8")
+    Item.objects.filter(sku="MILK").update(expiry_date=None)
+
+    client.post("/api/items/import/?commit=true", {"file": upload(body)}, format="multipart")
+
+    assert str(Item.objects.get(sku="MILK").expiry_date) == "2026-12-31"
+
+
+def test_dashboard_lists_low_stock_worst_first(client_for, stocked):
+    data = client_for(Role.VIEWER.value).get("/api/stats/dashboard/").data
+    assert data["low_stock_count"] == 2
+    assert data["out_of_stock_count"] == 1
+    assert [i["sku"] for i in data["low_stock_items"]] == ["EMPTY", "LOW"]
+    assert [i["sku"] for i in data["expiring_items"]] == ["FULL", "LOW"]

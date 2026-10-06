@@ -26,6 +26,7 @@ class ItemSerializer(serializers.ModelSerializer):
     # stored column.
     on_hand = serializers.IntegerField(read_only=True, required=False)
     is_low_stock = serializers.SerializerMethodField()
+    expiry_status = serializers.CharField(read_only=True)
 
     class Meta:
         model = Item
@@ -41,6 +42,8 @@ class ItemSerializer(serializers.ModelSerializer):
             "currency",
             "currency_code",
             "reorder_point",
+            "expiry_date",
+            "expiry_status",
             "is_active",
             "custom_fields",
             "on_hand",

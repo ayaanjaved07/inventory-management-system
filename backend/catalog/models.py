@@ -1,7 +1,13 @@
+from datetime import timedelta
+
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from core.models import TimeStampedModel
+
+# An item counts as "expiring soon" this many days before its expiry date.
+EXPIRY_WARNING_DAYS = 30
 
 
 class Category(TimeStampedModel):
@@ -44,6 +50,8 @@ class Item(TimeStampedModel):
         related_name="items", verbose_name=_("currency"),
     )
     reorder_point = models.PositiveIntegerField(_("reorder point"), default=0)
+    # Empty for things that never go off, like tools or cables.
+    expiry_date = models.DateField(_("expiry date"), null=True, blank=True)
     is_active = models.BooleanField(_("active"), default=True)
     custom_fields = models.JSONField(_("custom fields"), default=dict, blank=True)
 
@@ -55,6 +63,17 @@ class Item(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.sku} - {self.name}"
+
+    def expiry_status(self) -> str:
+        """'expired', 'expiring' (within EXPIRY_WARNING_DAYS) or '' for neither."""
+        if self.expiry_date is None:
+            return ""
+        today = timezone.localdate()
+        if self.expiry_date < today:
+            return "expired"
+        if self.expiry_date <= today + timedelta(days=EXPIRY_WARNING_DAYS):
+            return "expiring"
+        return ""
 
 
 class ItemImage(TimeStampedModel):

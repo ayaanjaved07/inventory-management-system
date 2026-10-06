@@ -65,9 +65,19 @@ class DashboardStatsView(APIView):
         from stock.models import Location
         from stock.services import annotate_on_hand
 
-        items = list(annotate_on_hand(Item.objects.filter(is_active=True)))
-        low = [i for i in items if i.on_hand <= i.reorder_point]
+        items = list(
+            annotate_on_hand(Item.objects.filter(is_active=True).select_related("category"))
+        )
         stock_value = sum((i.on_hand * i.unit_cost for i in items), start=Decimal("0"))
+
+        # Low stock, worst first: empty items on top, then the biggest shortfall.
+        low = [i for i in items if i.on_hand <= i.reorder_point]
+        low.sort(key=lambda i: (i.on_hand > 0, i.on_hand - i.reorder_point))
+        out_of_stock = [i for i in low if i.on_hand <= 0]
+
+        # Expired or expiring soon, the earliest date first.
+        expiring = [i for i in items if i.expiry_status()]
+        expiring.sort(key=lambda i: i.expiry_date)
 
         since = timezone.localdate() - timedelta(days=30)
         recent_sales = list(Sale.objects.filter(sale_date__gte=since))
@@ -78,10 +88,18 @@ class DashboardStatsView(APIView):
                 "total_units": sum(i.on_hand for i in items),
                 "stock_value": stock_value,
                 "low_stock_count": len(low),
+                "out_of_stock_count": len(out_of_stock),
                 "low_stock_items": [
                     {"id": i.id, "sku": i.sku, "name": i.name,
+                     "category": i.category.name if i.category else None,
                      "on_hand": i.on_hand, "reorder_point": i.reorder_point}
-                    for i in low[:10]
+                    for i in low[:20]
+                ],
+                "expiring_count": len(expiring),
+                "expiring_items": [
+                    {"id": i.id, "sku": i.sku, "name": i.name, "on_hand": i.on_hand,
+                     "expiry_date": i.expiry_date, "expiry_status": i.expiry_status()}
+                    for i in expiring[:10]
                 ],
                 "locations": Location.objects.filter(is_active=True).count(),
                 "active_projects": Project.objects.filter(

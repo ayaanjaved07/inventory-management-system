@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db.models import Count, F
 from django.http import HttpResponse
 from django.utils import timezone
@@ -12,7 +14,7 @@ from core.models import ActivityLog
 from core.services import log_activity
 from stock.services import annotate_on_hand, levels_by_location
 
-from .models import Category, Item, ItemImage
+from .models import EXPIRY_WARNING_DAYS, Category, Item, ItemImage
 from .serializers import CategorySerializer, ItemImageSerializer, ItemSerializer
 from .services import CsvImportError, export_items_csv, import_items_csv
 
@@ -32,18 +34,50 @@ class ItemViewSet(ActivityLoggedMixin, viewsets.ModelViewSet):
     serializer_class = ItemSerializer
     permission_classes = [RoleBasedPermission]
     domain = "catalog"
-    filterset_fields = ["category", "is_active", "unit"]
+    # unit_cost__gte / unit_cost__lte give a price range.
+    filterset_fields = {
+        "category": ["exact"],
+        "is_active": ["exact"],
+        "unit": ["exact"],
+        "unit_cost": ["gte", "lte"],
+    }
     search_fields = ["sku", "name", "description"]
-    ordering_fields = ["name", "sku", "unit_cost", "created_at"]
+    ordering_fields = ["name", "sku", "unit_cost", "on_hand", "expiry_date", "created_at"]
 
     def get_queryset(self):
         qs = Item.objects.select_related("category", "currency").prefetch_related("images")
         # on_hand is derived from the ledger in a single subquery, not stored.
         qs = annotate_on_hand(qs)
-        if self.request.query_params.get("low_stock") == "true":
-            # Must stay a QuerySet: DRF hands this to the filter backends, which
-            # read .model off it. A list comprehension here 500s the list view.
+        params = self.request.query_params
+
+        # These filters must keep qs a QuerySet: DRF hands it to the filter
+        # backends, which read .model off it. A list here 500s the list view.
+
+        # ?stock=out / low / ok. Low means at or below the reorder point.
+        stock = params.get("stock")
+        if stock == "out":
+            qs = qs.filter(on_hand__lte=0)
+        elif stock == "low":
             qs = qs.filter(on_hand__lte=F("reorder_point"))
+        elif stock == "ok":
+            qs = qs.filter(on_hand__gt=F("reorder_point"))
+
+        # ?min_stock=10&max_stock=50. Anything that isn't a number is ignored.
+        if params.get("min_stock", "").isdigit():
+            qs = qs.filter(on_hand__gte=int(params["min_stock"]))
+        if params.get("max_stock", "").isdigit():
+            qs = qs.filter(on_hand__lte=int(params["max_stock"]))
+
+        # ?expiry=expired / soon / none
+        today = timezone.localdate()
+        expiry = params.get("expiry")
+        if expiry == "expired":
+            qs = qs.filter(expiry_date__lt=today)
+        elif expiry == "soon":
+            last_day = today + timedelta(days=EXPIRY_WARNING_DAYS)
+            qs = qs.filter(expiry_date__gte=today, expiry_date__lte=last_day)
+        elif expiry == "none":
+            qs = qs.filter(expiry_date__isnull=True)
         return qs
 
     def perform_destroy(self, instance):
