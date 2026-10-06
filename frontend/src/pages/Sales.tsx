@@ -49,7 +49,7 @@ export default function Sales() {
       <div className="card">
         <input
           style={{ maxWidth: 320, marginTop: 0, marginBottom: 12 }}
-          placeholder="Search by invoice or customer..."
+          placeholder="Search by invoice or client..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value)
@@ -66,7 +66,7 @@ export default function Sales() {
               <thead>
                 <tr>
                   <th>Invoice</th>
-                  <th>Customer</th>
+                  <th>Client</th>
                   <th>Date</th>
                   <th className="num">Total</th>
                   <th></th>

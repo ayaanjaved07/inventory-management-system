@@ -22,21 +22,24 @@ function newLine(): Line {
 }
 
 // The "Record sale" form: invoice details plus one row per item sold.
+// `customerId` picks the client in advance (used on a client's page).
 export function NewSaleForm({
   currency,
+  customerId,
   onSaved,
   onCancel,
 }: {
   currency: string
+  customerId?: number
   onSaved: () => void
   onCancel: () => void
 }) {
   const items = useApi<Paginated<Item>>('/items/?page_size=200')
-  const customers = useApi<Paginated<Customer>>('/customers/')
+  const customers = useApi<Paginated<Customer>>('/customers/?page_size=500')
   const locations = useApi<Paginated<Location>>('/locations/')
 
   const [invoiceNo, setInvoiceNo] = useState('')
-  const [customer, setCustomer] = useState('')
+  const [customer, setCustomer] = useState(customerId ? String(customerId) : '')
   const [location, setLocation] = useState('')
   const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10))
   const [lines, setLines] = useState<Line[]>([newLine()])
@@ -100,7 +103,7 @@ export function NewSaleForm({
           <span className="hint">Leave blank to generate one.</span>
         </label>
         <label>
-          Customer
+          Client
           <select value={customer} onChange={(e) => setCustomer(e.target.value)}>
             <option value="">-</option>
             {customers.data?.results.map((c) => (

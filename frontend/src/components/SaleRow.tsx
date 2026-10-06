@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { formatCurrency, formatDate } from '../lib/utils'
 import type { Sale } from '../lib/types'
 
@@ -18,7 +19,7 @@ export function SaleRow({
     <>
       <tr>
         <td className="mono">{sale.invoice_no}</td>
-        <td>{sale.customer_name || '-'}</td>
+        <td>{sale.customer ? <Link to={`/clients/${sale.customer}`}>{sale.customer_name}</Link> : '-'}</td>
         <td>{formatDate(sale.sale_date)}</td>
         <td className="num">{formatCurrency(sale.total_amount, sale.currency)}</td>
         <td>

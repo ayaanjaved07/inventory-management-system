@@ -21,6 +21,16 @@ export function formatDate(iso: string) {
   })
 }
 
+// The date `days` days ago as 'YYYY-MM-DD', in the user's own time zone.
+// That is the format <input type="date"> and the backend both use.
+export function isoDateDaysAgo(days: number) {
+  const date = new Date()
+  date.setDate(date.getDate() - days)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
 export function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('en-IN', {
     day: '2-digit',

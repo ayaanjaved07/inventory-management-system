@@ -103,9 +103,50 @@ export interface Availability {
   available: number
 }
 
-export interface Customer {
+// Suppliers (we buy from them) and clients (we sell to them) have the same
+// contact details.
+export interface Contact {
   id: number
   name: string
+  contact_person: string
+  email: string
+  phone: string
+  address: string
+}
+
+// A client. The backend calls them customers.
+export interface Customer extends Contact {
+  sale_count: number
+  // In our own currency. null if there are no sales yet.
+  total_sold: string | null
+}
+
+export interface Supplier extends Contact {
+  purchase_count: number
+  // null if nothing has been bought yet.
+  total_purchased: string | null
+}
+
+export interface PurchaseLine {
+  id: number
+  item_sku: string
+  item_name: string
+  quantity: number
+  unit_cost: string
+  line_total: string
+}
+
+// Purchases are always in our own currency.
+export interface Purchase {
+  id: number
+  reference_no: string
+  supplier: number
+  supplier_name: string
+  location_code: string
+  purchase_date: string
+  total_amount: string
+  note: string
+  lines: PurchaseLine[]
 }
 
 export interface SaleLine {
@@ -120,6 +161,7 @@ export interface SaleLine {
 export interface Sale {
   id: number
   invoice_no: string
+  customer: number | null
   customer_name: string | null
   sale_date: string
   currency: string
@@ -182,6 +224,16 @@ export interface ActivityLogEntry {
   // {field: [old value, new value]}. Empty for create, delete and login.
   changes: Record<string, [unknown, unknown]>
   timestamp: string
+}
+
+// The filters on the Activity page. Like the item filters, each key is a
+// query parameter on GET /activity/. Dates are 'YYYY-MM-DD'.
+export interface ActivityFilterValues {
+  search: string
+  model_name: string
+  action: string
+  date_from: string
+  date_to: string
 }
 
 // Result of POST /items/import/, checked or applied.

@@ -13,7 +13,7 @@ const PERMISSIONS: { area: string; roles: Role[] }[] = [
   { area: 'Items & categories', roles: ['Admin', 'Manager'] },
   { area: 'Stock movements', roles: ['Admin', 'Manager', 'Storekeeper'] },
   { area: 'Projects & allocations', roles: ['Admin', 'Manager'] },
-  { area: 'Sales', roles: ['Admin', 'Manager'] },
+  { area: 'Sales, purchases, suppliers & clients', roles: ['Admin', 'Manager'] },
   { area: 'Users & roles', roles: ['Admin'] },
 ]
 

@@ -11,6 +11,11 @@ import ItemDetail from './pages/ItemDetail'
 import Stock from './pages/Stock'
 import Projects from './pages/Projects'
 import Sales from './pages/Sales'
+import Purchases from './pages/Purchases'
+import Suppliers from './pages/Suppliers'
+import SupplierDetail from './pages/SupplierDetail'
+import Clients from './pages/Clients'
+import ClientDetail from './pages/ClientDetail'
 import Activity from './pages/Activity'
 import Settings from './pages/Settings'
 
@@ -52,6 +57,11 @@ export default function App() {
             <Route path="stock" element={<Stock />} />
             <Route path="projects" element={<Projects />} />
             <Route path="sales" element={<Sales />} />
+            <Route path="purchases" element={<Purchases />} />
+            <Route path="suppliers" element={<Suppliers />} />
+            <Route path="suppliers/:id" element={<SupplierDetail />} />
+            <Route path="clients" element={<Clients />} />
+            <Route path="clients/:id" element={<ClientDetail />} />
             <Route path="activity" element={<Activity />} />
             <Route
               path="settings"

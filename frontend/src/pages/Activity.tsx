@@ -2,10 +2,17 @@ import { useState } from 'react'
 
 import { useApi } from '../lib/useApi'
 import { formatDateTime } from '../lib/utils'
-import type { ActivityLogEntry, Paginated } from '../lib/types'
+import type { ActivityFilterValues, ActivityLogEntry, Paginated } from '../lib/types'
 import { Pagination } from '../components/Pagination'
+import { ActivityFilters } from '../components/ActivityFilters'
 
-const ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'IMPORT', 'EXPORT']
+// The backend's model names, as the page shows them.
+const TYPE_NAMES: Record<string, string> = {
+  Sale: 'Sale',
+  Purchase: 'Purchase',
+  Customer: 'Client',
+  Supplier: 'Supplier',
+}
 
 // Show a changed value. Empty values are shown as "-".
 function show(value: unknown) {
@@ -13,62 +20,55 @@ function show(value: unknown) {
   return String(value)
 }
 
+// A log of buying and selling: sales, purchases, and changes to clients and
+// suppliers. Logins and item edits are not shown here.
 export default function Activity() {
-  const [search, setSearch] = useState('')
-  const [action, setAction] = useState('')
+  const [filters, setFilters] = useState<ActivityFilterValues>({
+    search: '',
+    model_name: '',
+    action: '',
+    date_from: '',
+    date_to: '',
+  })
   const [page, setPage] = useState(1)
 
-  const filters = new URLSearchParams()
-  if (search) filters.set('search', search)
-  if (action) filters.set('action', action)
+  // Copy the filters that have a value into the URL.
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(filters)) {
+    if (value) query.set(key, value)
+  }
 
-  const activity = useApi<Paginated<ActivityLogEntry>>(`/activity/?${filters}&page=${page}`)
+  const activity = useApi<Paginated<ActivityLogEntry>>(`/activity/?${query}&page=${page}`)
 
   return (
     <>
       <h1>Activity</h1>
 
       <div className="card">
-        <div className="row" style={{ marginBottom: 12 }}>
-          <input
-            style={{ maxWidth: 320, marginTop: 0 }}
-            placeholder="Search by record or model..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
-          />
-          <select
-            style={{ width: 160, marginTop: 0 }}
-            value={action}
-            onChange={(e) => {
-              setAction(e.target.value)
-              setPage(1)
-            }}
-          >
-            <option value="">All actions</option>
-            {ACTIONS.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </div>
+        <ActivityFilters
+          filters={filters}
+          onChange={(next) => {
+            setFilters(next)
+            setPage(1)
+          }}
+        />
+      </div>
 
+      <div className="card">
         {activity.error && <p className="error">{activity.error}</p>}
         {!activity.data && activity.loading && <p>Loading...</p>}
         {activity.data && activity.data.results.length === 0 && (
-          <p className="muted">No activity recorded yet.</p>
+          <p className="muted">No activity for these filters.</p>
         )}
         {activity.data && activity.data.results.length > 0 && (
           <div className="table-wrap">
+            <p className="muted">{activity.data.count} entries.</p>
             <table>
               <thead>
                 <tr>
                   <th>When</th>
                   <th>Who</th>
-                  <th>Action</th>
+                  <th>What</th>
                   <th>Record</th>
                   <th>Changes</th>
                 </tr>
@@ -79,11 +79,11 @@ export default function Activity() {
                     <td>{formatDateTime(entry.timestamp)}</td>
                     <td>{entry.user_name || 'System'}</td>
                     <td>
-                      <span className="badge">{entry.action_display}</span>
+                      <span className="badge">
+                        {TYPE_NAMES[entry.model_name] || entry.model_name} {entry.action_display.toLowerCase()}
+                      </span>
                     </td>
-                    <td>
-                      {entry.model_name} {entry.object_repr}
-                    </td>
+                    <td>{entry.object_repr}</td>
                     <td>
                       {Object.entries(entry.changes || {}).map(([field, [from, to]]) => (
                         <div key={field}>
