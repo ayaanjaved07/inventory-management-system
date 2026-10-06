@@ -12,6 +12,7 @@ const EMPTY_FORM = {
   unit: 'pc',
   unit_cost: '0',
   reorder_point: '0',
+  expiry_date: '',
 }
 
 // The "New item" form on the Items page.
@@ -30,6 +31,8 @@ export function NewItemForm({ onSaved, onCancel }: { onSaved: () => void; onCanc
         category: form.category || null,
         unit_cost: form.unit_cost || '0',
         reorder_point: Number(form.reorder_point) || 0,
+        // Blank means the item does not expire.
+        expiry_date: form.expiry_date || null,
       })
       onSaved()
     } catch (err) {
@@ -93,6 +96,15 @@ export function NewItemForm({ onSaved, onCancel }: { onSaved: () => void; onCanc
             onChange={(e) => setForm({ ...form, reorder_point: e.target.value })}
           />
           <span className="hint">Shows as low stock at or below this number.</span>
+        </label>
+        <label>
+          Expiry date
+          <input
+            type="date"
+            value={form.expiry_date}
+            onChange={(e) => setForm({ ...form, expiry_date: e.target.value })}
+          />
+          <span className="hint">Leave blank if it does not expire.</span>
         </label>
       </div>
 

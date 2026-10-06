@@ -410,7 +410,7 @@ def test_items_filter_by_stock_range(client_for, stocked):
 def test_items_filter_by_expiry(client_for, stocked):
     client = client_for(Role.VIEWER.value)
     assert skus(client.get("/api/items/?expiry=expired")) == ["FULL"]
-    assert skus(client.get("/api/items/?expiry=soon")) == ["LOW"]
+    assert skus(client.get("/api/items/?expiry=soon")) == ["FULL", "LOW"]
     assert skus(client.get("/api/items/?expiry=none")) == ["EMPTY"]
 
 

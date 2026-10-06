@@ -35,6 +35,10 @@ export interface Item {
   unit_cost: string
   currency_code: string | null
   reorder_point: number
+  // 'YYYY-MM-DD', or null if the item does not expire.
+  expiry_date: string | null
+  // 'expired', 'expiring' (within 30 days) or '' for neither.
+  expiry_status: string
   is_active: boolean
   on_hand: number
   is_low_stock: boolean
@@ -139,11 +143,34 @@ export interface DashboardStats {
   total_units: number
   stock_value: string
   low_stock_count: number
-  low_stock_items: { id: number; sku: string; name: string; on_hand: number; reorder_point: number }[]
+  out_of_stock_count: number
+  // Worst first: empty items, then the biggest shortfall. At most 20.
+  low_stock_items: LowStockItem[]
+  expiring_count: number
+  // Expired or expiring soon, earliest first. At most 10.
+  expiring_items: ExpiringItem[]
   active_projects: number
   invoice_count: number
   revenue_30d: string
   base_currency: string
+}
+
+export interface LowStockItem {
+  id: number
+  sku: string
+  name: string
+  category: string | null
+  on_hand: number
+  reorder_point: number
+}
+
+export interface ExpiringItem {
+  id: number
+  sku: string
+  name: string
+  on_hand: number
+  expiry_date: string
+  expiry_status: string
 }
 
 export interface ActivityLogEntry {
@@ -163,4 +190,34 @@ export interface ImportReport {
   created: number
   updated: number
   errors: { row: number; sku: string; message: string }[]
+}
+
+// The filters on the Items page. Each key is the name of a query parameter
+// on GET /items/, so the page can copy every non-empty value into the URL.
+export interface ItemFilterValues {
+  search: string
+  category: string
+  unit: string
+  stock: string
+  min_stock: string
+  max_stock: string
+  unit_cost__gte: string
+  unit_cost__lte: string
+  expiry: string
+  is_active: string
+  ordering: string
+}
+
+export const NO_ITEM_FILTERS: ItemFilterValues = {
+  search: '',
+  category: '',
+  unit: '',
+  stock: '',
+  min_stock: '',
+  max_stock: '',
+  unit_cost__gte: '',
+  unit_cost__lte: '',
+  expiry: '',
+  is_active: '',
+  ordering: 'name',
 }

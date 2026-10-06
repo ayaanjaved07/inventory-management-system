@@ -37,7 +37,7 @@ export function ItemsCsvImport({ onImported }: { onImported: () => void }) {
       <h2>Import items from CSV</h2>
       <p className="muted">
         Columns: sku, name, description, category_name, unit, unit_cost, currency_code,
-        reorder_point, is_active. Stock cannot be set by import.
+        reorder_point, expiry_date (YYYY-MM-DD, optional), is_active. Stock cannot be set by import.
       </p>
 
       {error && <p className="error">{error}</p>}

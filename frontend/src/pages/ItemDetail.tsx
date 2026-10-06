@@ -5,6 +5,7 @@ import { useApi } from '../lib/useApi'
 import { formatCurrency, formatDateTime } from '../lib/utils'
 import type { Item, Paginated, StockMovement } from '../lib/types'
 import { ImageUploader } from '../components/ImageUploader'
+import { ExpiryEditor } from '../components/ExpiryEditor'
 
 // One row of GET /items/<id>/stock/: how many are at each location.
 interface LocationLevel {
@@ -61,6 +62,12 @@ export default function ItemDetail() {
               <tr>
                 <th>On hand</th>
                 <td>{data.on_hand}</td>
+              </tr>
+              <tr>
+                <th>Expiry date</th>
+                <td>
+                  <ExpiryEditor item={data} canEdit={canEdit} onSaved={item.reload} />
+                </td>
               </tr>
               <tr>
                 <th>Active</th>

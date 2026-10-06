@@ -68,14 +68,15 @@ class ItemViewSet(ActivityLoggedMixin, viewsets.ModelViewSet):
         if params.get("max_stock", "").isdigit():
             qs = qs.filter(on_hand__lte=int(params["max_stock"]))
 
-        # ?expiry=expired / soon / none
+        # ?expiry=expired / soon / none. "soon" also includes expired items,
+        # the same list the dashboard shows.
         today = timezone.localdate()
         expiry = params.get("expiry")
         if expiry == "expired":
             qs = qs.filter(expiry_date__lt=today)
         elif expiry == "soon":
             last_day = today + timedelta(days=EXPIRY_WARNING_DAYS)
-            qs = qs.filter(expiry_date__gte=today, expiry_date__lte=last_day)
+            qs = qs.filter(expiry_date__lte=last_day)
         elif expiry == "none":
             qs = qs.filter(expiry_date__isnull=True)
         return qs

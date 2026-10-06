@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { formatCurrency } from '../lib/utils'
+import { formatCurrency, formatDate } from '../lib/utils'
 import type { Item } from '../lib/types'
+import { ExpiryBadge } from './ExpiryBadge'
 
 // The table on the Items page. It only shows the items it is given.
 export function ItemsTable({ items }: { items: Item[] }) {
@@ -15,6 +16,7 @@ export function ItemsTable({ items }: { items: Item[] }) {
             <th>Category</th>
             <th className="num">Unit cost</th>
             <th className="num">On hand</th>
+            <th>Expiry</th>
           </tr>
         </thead>
         <tbody>
@@ -35,6 +37,9 @@ export function ItemsTable({ items }: { items: Item[] }) {
               <td className="num">{formatCurrency(item.unit_cost, item.currency_code || 'INR')}</td>
               <td className="num">
                 {item.on_hand} {item.is_low_stock && <span className="badge amber">Low stock</span>}
+              </td>
+              <td>
+                {item.expiry_date ? formatDate(item.expiry_date) : '-'} <ExpiryBadge status={item.expiry_status} />
               </td>
             </tr>
           ))}
