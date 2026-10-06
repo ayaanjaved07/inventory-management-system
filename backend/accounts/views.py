@@ -1,5 +1,5 @@
 from django.contrib.auth.models import Group
-from rest_framework import generics, status, viewsets
+from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -20,17 +20,9 @@ from .serializers import (
 )
 
 
+# Logins are not written to the activity log; that page is for buying and selling.
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == status.HTTP_200_OK:
-            username = request.data.get("username")
-            user = User.objects.filter(username=username).first()
-            if user:
-                log_activity(user, ActivityLog.Action.LOGIN, user)
-        return response
 
 
 class RegisterView(generics.CreateAPIView):

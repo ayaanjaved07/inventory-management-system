@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -14,6 +14,20 @@ from .serializers import ActivityLogSerializer, CurrencySerializer
 from .services import convert
 
 
+# The Activity page only shows buying and selling: sales, purchases, and the
+# clients and suppliers they are with. Item and user changes are still logged,
+# just not shown here.
+TRADE_MODELS = ["Sale", "Purchase", "Customer", "Supplier"]
+
+
+def _date_param(value: str):
+    """A YYYY-MM-DD query param as a date, or None if it is missing or invalid."""
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
 class ActivityLogListView(generics.ListAPIView):
     serializer_class = ActivityLogSerializer
     permission_classes = [IsAuthenticated]
@@ -21,7 +35,16 @@ class ActivityLogListView(generics.ListAPIView):
     search_fields = ["object_repr", "model_name"]
 
     def get_queryset(self):
-        return ActivityLog.objects.select_related("user")
+        qs = ActivityLog.objects.select_related("user").filter(model_name__in=TRADE_MODELS)
+
+        # ?date_from=2026-01-01&date_to=2026-01-31, both days included.
+        date_from = _date_param(self.request.query_params.get("date_from", ""))
+        date_to = _date_param(self.request.query_params.get("date_to", ""))
+        if date_from:
+            qs = qs.filter(timestamp__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(timestamp__date__lte=date_to)
+        return qs
 
 
 class CurrencyListView(generics.ListCreateAPIView):

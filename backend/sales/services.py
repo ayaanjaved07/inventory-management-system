@@ -23,7 +23,7 @@ from core.services import get_rate
 from stock.models import MovementType
 from stock.services import record_movement
 
-from .models import Sale, SaleLine
+from .models import Purchase, PurchaseLine, Sale, SaleLine
 
 
 class RateUnavailable(Exception):
@@ -123,3 +123,76 @@ def next_invoice_no(prefix: str = "INV") -> str:
     year = timezone.localdate().year
     count = Sale.objects.filter(invoice_no__startswith=f"{prefix}-{year}-").count()
     return f"{prefix}-{year}-{count + 1:04d}"
+
+
+@transaction.atomic
+def record_purchase(
+    *,
+    reference_no: str,
+    supplier,
+    location,
+    purchase_date,
+    lines: list[dict],
+    note: str = "",
+    user=None,
+) -> Purchase:
+    """Record stock bought from a supplier: the purchase, its lines, and one
+    RECEIPT movement per line, all in one transaction.
+
+    `lines` is a list of ``{"item": Item, "quantity": int, "unit_cost": Decimal}``;
+    if `unit_cost` is missing the item's own unit_cost is used.
+    """
+    if not lines:
+        raise ValueError(_("A purchase needs at least one line."))
+
+    purchase = Purchase.objects.create(
+        reference_no=reference_no,
+        supplier=supplier,
+        location=location,
+        purchase_date=purchase_date,
+        note=note,
+        created_by=user,
+    )
+
+    total = Decimal("0")
+    for line in lines:
+        item = line["item"]
+        quantity = int(line["quantity"])
+        if quantity <= 0:
+            raise ValueError(_("Line quantities must be positive."))
+        unit_cost = line.get("unit_cost")
+        if unit_cost is None:
+            unit_cost = item.unit_cost
+
+        # PurchaseLine.save() works out line_total.
+        purchase_line = PurchaseLine.objects.create(
+            purchase=purchase, item=item, quantity=quantity, unit_cost=Decimal(unit_cost)
+        )
+        total += purchase_line.line_total
+
+        # Buying adds stock, and stock only changes through the ledger.
+        record_movement(
+            item=item,
+            location=location,
+            movement_type=MovementType.RECEIPT,
+            quantity=quantity,
+            user=user,
+            unit_cost=unit_cost,
+            reference_type="Purchase",
+            reference_id=str(purchase.pk),
+            note=_("Bought from %(supplier)s on %(ref)s")
+            % {"supplier": supplier.name, "ref": purchase.reference_no},
+        )
+
+    purchase.total_amount = total
+    purchase.save(update_fields=["total_amount", "updated_at"])
+    return purchase
+
+
+def next_purchase_no() -> str:
+    """Like next_invoice_no(), but for purchases: PUR-2026-0001."""
+    from django.utils import timezone
+
+    year = timezone.localdate().year
+    count = Purchase.objects.filter(reference_no__startswith=f"PUR-{year}-").count()
+    return f"PUR-{year}-{count + 1:04d}"

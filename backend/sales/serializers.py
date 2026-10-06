@@ -3,15 +3,38 @@ from rest_framework import serializers
 from catalog.models import Item
 from stock.models import Location
 
-from .models import Customer, Sale, SaleLine
+from .models import Customer, Purchase, PurchaseLine, Sale, SaleLine, Supplier
 
 
 class CustomerSerializer(serializers.ModelSerializer):
+    # Both are added by CustomerViewSet.get_queryset().
     sale_count = serializers.IntegerField(read_only=True, required=False)
+    total_sold = serializers.DecimalField(
+        max_digits=18, decimal_places=2, read_only=True, required=False
+    )
 
     class Meta:
         model = Customer
-        fields = ["id", "name", "email", "phone", "address", "sale_count", "created_at"]
+        fields = [
+            "id", "name", "contact_person", "email", "phone", "address",
+            "sale_count", "total_sold", "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
+class SupplierSerializer(serializers.ModelSerializer):
+    # Both are added by SupplierViewSet.get_queryset().
+    purchase_count = serializers.IntegerField(read_only=True, required=False)
+    total_purchased = serializers.DecimalField(
+        max_digits=18, decimal_places=2, read_only=True, required=False
+    )
+
+    class Meta:
+        model = Supplier
+        fields = [
+            "id", "name", "contact_person", "email", "phone", "address",
+            "purchase_count", "total_purchased", "created_at",
+        ]
         read_only_fields = ["id", "created_at"]
 
 
@@ -77,4 +100,60 @@ class SaleCreateSerializer(serializers.Serializer):
         value = (value or "").strip()
         if value and Sale.objects.filter(invoice_no=value).exists():
             raise serializers.ValidationError(f"Invoice {value} already exists.")
+        return value
+
+
+class PurchaseLineSerializer(serializers.ModelSerializer):
+    item_sku = serializers.CharField(source="item.sku", read_only=True)
+    item_name = serializers.CharField(source="item.name", read_only=True)
+
+    class Meta:
+        model = PurchaseLine
+        fields = ["id", "item", "item_sku", "item_name", "quantity", "unit_cost", "line_total"]
+        read_only_fields = fields
+
+
+class PurchaseSerializer(serializers.ModelSerializer):
+    lines = PurchaseLineSerializer(many=True, read_only=True)
+    supplier_name = serializers.CharField(source="supplier.name", read_only=True)
+    location_code = serializers.CharField(source="location.code", read_only=True)
+
+    class Meta:
+        model = Purchase
+        fields = [
+            "id", "reference_no", "supplier", "supplier_name", "location", "location_code",
+            "purchase_date", "total_amount", "note", "lines", "created_at",
+        ]
+        # Like sales, purchases are never edited: their stock is in the ledger.
+        read_only_fields = fields
+
+
+class PurchaseLineCreateSerializer(serializers.Serializer):
+    item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all())
+    quantity = serializers.IntegerField(min_value=1)
+    # Falls back to the item's unit_cost in record_purchase().
+    unit_cost = serializers.DecimalField(
+        max_digits=14, decimal_places=2, min_value=0, required=False, allow_null=True
+    )
+
+
+class PurchaseCreateSerializer(serializers.Serializer):
+    """Input for recording a purchase. `record_purchase()` does the work."""
+
+    reference_no = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    supplier = serializers.PrimaryKeyRelatedField(queryset=Supplier.objects.all())
+    location = serializers.PrimaryKeyRelatedField(queryset=Location.objects.all())
+    purchase_date = serializers.DateField()
+    note = serializers.CharField(required=False, allow_blank=True)
+    lines = PurchaseLineCreateSerializer(many=True)
+
+    def validate_lines(self, value):
+        if not value:
+            raise serializers.ValidationError("A purchase needs at least one line.")
+        return value
+
+    def validate_reference_no(self, value):
+        value = (value or "").strip()
+        if value and Purchase.objects.filter(reference_no=value).exists():
+            raise serializers.ValidationError(f"Purchase {value} already exists.")
         return value

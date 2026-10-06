@@ -323,3 +323,161 @@ def test_dashboard_reports_revenue_and_invoice_count(
     assert data["invoice_count"] == 1
     assert Decimal(str(data["revenue_30d"])) == Decimal("75.00")
     assert data["base_currency"] == "INR"
+
+
+# --------------------------------------------------------------------------
+# Purchases from suppliers
+# --------------------------------------------------------------------------
+@pytest.fixture
+def supplier(db):
+    from sales.models import Supplier
+
+    return Supplier.objects.create(name="Lamington Road Traders", address="Mumbai")
+
+
+def test_purchase_adds_stock_through_the_ledger(item, location, user, supplier):
+    from sales.services import record_purchase
+
+    purchase = record_purchase(
+        reference_no="PUR-1", supplier=supplier, location=location,
+        purchase_date=date.today(), user=user,
+        lines=[{"item": item, "quantity": 40, "unit_cost": Decimal("12.50")}],
+    )
+
+    movement = StockMovement.objects.get(reference_type="Purchase", reference_id=str(purchase.pk))
+    assert movement.movement_type == MovementType.RECEIPT
+    assert movement.quantity == 40
+    assert on_hand(item, location) == 40
+    assert purchase.total_amount == Decimal("500.00")
+
+
+def test_manager_can_record_a_purchase_through_the_api(client_for, item, location, supplier):
+    client = client_for(Role.MANAGER.value)
+    resp = client.post(
+        "/api/purchases/",
+        {
+            "supplier": supplier.id,
+            "location": location.id,
+            "purchase_date": str(date.today()),
+            "lines": [{"item": item.id, "quantity": 5}],
+        },
+        format="json",
+    )
+    assert resp.status_code == 201
+    assert resp.data["reference_no"].startswith("PUR-")
+    assert on_hand(item, location) == 5
+
+
+def test_viewer_cannot_record_a_purchase(client_for, item, location, supplier):
+    client = client_for(Role.VIEWER.value)
+    resp = client.post(
+        "/api/purchases/",
+        {
+            "supplier": supplier.id,
+            "location": location.id,
+            "purchase_date": str(date.today()),
+            "lines": [{"item": item.id, "quantity": 5}],
+        },
+        format="json",
+    )
+    assert resp.status_code == 403
+    assert on_hand(item, location) == 0
+
+
+def test_purchases_cannot_be_edited_or_deleted(client_for, item, location, user, supplier):
+    from sales.services import record_purchase
+
+    purchase = record_purchase(
+        reference_no="PUR-2", supplier=supplier, location=location,
+        purchase_date=date.today(), user=user, lines=[{"item": item, "quantity": 3}],
+    )
+    client = client_for(Role.ADMIN.value)
+    assert client.patch(f"/api/purchases/{purchase.id}/", {"note": "x"}).status_code == 405
+    assert client.delete(f"/api/purchases/{purchase.id}/").status_code == 405
+
+
+def test_supplier_shows_its_purchase_totals(client_for, item, location, user, supplier):
+    from sales.services import record_purchase
+
+    for n in (1, 2):
+        record_purchase(
+            reference_no=f"PUR-T{n}", supplier=supplier, location=location,
+            purchase_date=date.today(), user=user,
+            lines=[{"item": item, "quantity": 10, "unit_cost": Decimal("3")}],
+        )
+    data = client_for(Role.VIEWER.value).get(f"/api/suppliers/{supplier.id}/").data
+    assert data["purchase_count"] == 2
+    assert Decimal(str(data["total_purchased"])) == Decimal("60.00")
+
+
+def test_client_shows_its_sales_total(client_for, stocked_item, location, user, base_currency):
+    from sales.models import Customer
+
+    customer = Customer.objects.create(name="Acme", contact_person="Ravi")
+    record_sale(
+        invoice_no="INV-C1", customer=customer, location=location,
+        sale_date=date.today(), user=user,
+        lines=[{"item": stocked_item, "quantity": 4, "unit_price": Decimal("10")}],
+    )
+    data = client_for(Role.VIEWER.value).get(f"/api/customers/{customer.id}/").data
+    assert data["contact_person"] == "Ravi"
+    assert data["sale_count"] == 1
+    assert Decimal(str(data["total_sold"])) == Decimal("40.00")
+
+
+# --------------------------------------------------------------------------
+# Activity page: buying and selling only
+# --------------------------------------------------------------------------
+def test_login_is_not_logged(db):
+    from rest_framework.test import APIClient
+
+    from accounts.models import User
+    from core.models import ActivityLog
+
+    User.objects.create_user(username="someone", password="pass12345")
+    resp = APIClient().post(
+        "/api/auth/token/", {"username": "someone", "password": "pass12345"}, format="json"
+    )
+    assert resp.status_code == 200
+    assert not ActivityLog.objects.filter(action=ActivityLog.Action.LOGIN).exists()
+
+
+def test_activity_shows_purchases_but_not_item_changes(client_for, location, supplier):
+    client = client_for(Role.MANAGER.value)
+    created = client.post("/api/items/", {"sku": "ACT-1", "name": "Hidden"})
+    client.post(
+        "/api/purchases/",
+        {
+            "supplier": supplier.id,
+            "location": location.id,
+            "purchase_date": str(date.today()),
+            "lines": [{"item": created.data["id"], "quantity": 2}],
+        },
+        format="json",
+    )
+
+    rows = client.get("/api/activity/").data["results"]
+    assert [r["model_name"] for r in rows] == ["Purchase"]
+    assert "Lamington Road Traders" in rows[0]["object_repr"]
+
+
+def test_activity_can_be_filtered_by_date(client_for, supplier):
+    from django.utils import timezone
+
+    from core.models import ActivityLog
+
+    old = ActivityLog.objects.create(action="CREATE", model_name="Supplier", object_repr="old")
+    ActivityLog.objects.filter(pk=old.pk).update(timestamp=timezone.now() - timedelta(days=40))
+    ActivityLog.objects.create(action="CREATE", model_name="Supplier", object_repr="new")
+
+    client = client_for(Role.VIEWER.value)
+    since = date.today() - timedelta(days=7)
+    rows = client.get(f"/api/activity/?date_from={since}").data["results"]
+    assert [r["object_repr"] for r in rows] == ["new"]
+
+    until = date.today() - timedelta(days=30)
+    rows = client.get(f"/api/activity/?date_to={until}").data["results"]
+    assert [r["object_repr"] for r in rows] == ["old"]
+
+    # A bad date is ignored, not a 500.
+    assert client.get("/api/activity/?date_from=2026-13-01").status_code == 200
