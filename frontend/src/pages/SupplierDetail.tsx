@@ -37,7 +37,7 @@ export default function SupplierDetail() {
         {canEdit && <button onClick={() => setShowForm(!showForm)}>Record purchase</button>}
       </div>
       <p className="muted">
-        {data.purchase_count} purchases, {formatCurrency(data.total_purchased || 0)} in total.
+        {data.purchase_count} {data.purchase_count === 1 ? 'purchase' : 'purchases'}, {formatCurrency(data.total_purchased || 0)} in total.
       </p>
 
       {showForm && canEdit && (

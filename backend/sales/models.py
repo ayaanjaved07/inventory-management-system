@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -152,7 +153,7 @@ class Purchase(TimeStampedModel):
 
     def __str__(self) -> str:
         # Shown on the Activity page, so it says who we bought from.
-        return f"{self.reference_no} from {self.supplier.name} ({self.total_amount})"
+        return f"{self.reference_no} from {self.supplier.name} ({self.total_amount} {settings.BASE_CURRENCY})"
 
 
 class PurchaseLine(models.Model):

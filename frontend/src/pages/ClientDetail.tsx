@@ -40,7 +40,7 @@ export default function ClientDetail() {
         {canEdit && <button onClick={() => setShowForm(!showForm)}>Record sale</button>}
       </div>
       <p className="muted">
-        {data.sale_count} sales, {formatCurrency(data.total_sold || 0, BASE_CURRENCY)} in total.
+        {data.sale_count} {data.sale_count === 1 ? 'sale' : 'sales'}, {formatCurrency(data.total_sold || 0, BASE_CURRENCY)} in total.
       </p>
 
       {showForm && canEdit && (
